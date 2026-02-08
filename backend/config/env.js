@@ -7,8 +7,8 @@ const conditionalEnvVars = {
   INSTAGRAM_APP_ID: ["production"],
   INSTAGRAM_APP_SECRET: ["production"],
   INSTAGRAM_WEBHOOK_VERIFY_TOKEN: ["production"],
-  STRIPE_SECRET_KEY: ["production"],
-  STRIPE_PUBLISHABLE_KEY: ["production"],
+  // STRIPE_SECRET_KEY: ["production"], // Disabled for now
+  // STRIPE_PUBLISHABLE_KEY: ["production"], // Disabled for now
 };
 
 const validateEnv = () => {
@@ -87,7 +87,8 @@ const config = {
       process.env.INSTAGRAM_WEBHOOK_URL ||
       `${process.env.API_URL}/api/webhooks/instagram`,
     // OAuth state TTL in milliseconds (configurable via INSTAGRAM_OAUTH_STATE_TTL_MS; default 10 minutes)
-    stateTtlMs: parseInt(process.env.INSTAGRAM_OAUTH_STATE_TTL_MS) || 10 * 60 * 1000,
+    stateTtlMs:
+      parseInt(process.env.INSTAGRAM_OAUTH_STATE_TTL_MS) || 10 * 60 * 1000,
   },
 
   // Stripe
