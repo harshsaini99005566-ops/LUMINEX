@@ -1,0 +1,1 @@
+{"object":"instagram","entry":[{"id":"12345","time":1600000000,"messaging":[{"sender":{"id":"SENDER"},"recipient":{"id":"RECIPIENT"},"message":{"text":"Hello from local webhook test"},"timestamp":1600000000}]}]}

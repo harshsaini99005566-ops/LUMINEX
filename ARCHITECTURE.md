@@ -1,0 +1,335 @@
+# AutoDM System Architecture
+
+## High-Level System Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         FRONTEND (Next.js)                          │
+│                                                                     │
+│  Landing → Login/Signup → Dashboard → Rules → Inbox → Billing     │
+│  (Cyberpunk UI, Three.js, Framer Motion)                          │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │
+                           │ HTTPS / WebSocket
+                           │
+┌──────────────────────────▼──────────────────────────────────────────┐
+│                  API GATEWAY (Express.js)                           │
+│                                                                     │
+│  JWT Auth → Route Handler → Middleware → Business Logic           │
+└──────┬────────────────────────────────────────────────────────────┘
+       │
+       ├─────────────────────┬──────────────────────┬─────────────────┐
+       │                     │                      │                 │
+       ▼                     ▼                      ▼                 ▼
+   ┌────────┐           ┌────────┐           ┌────────┐         ┌──────────┐
+   │ Rules  │           │Instagram│          │Messages│        │Billing   │
+   │Engine  │           │ API    │          │ Queue  │        │Service   │
+   │        │           │        │          │(BullMQ)│        │(Stripe)  │
+   └────┬───┘           └───┬────┘          └───┬────┘        └────┬─────┘
+        │                   │                   │                   │
+        └───────────────────┼───────────────────┼───────────────────┘
+                            │
+                    ┌───────▼────────┐
+                    │  MongoDB Atlas │
+                    │                │
+                    │ Collections:  │
+                    │ - Users       │
+                    │ - Accounts    │
+                    │ - Rules       │
+                    │ - Messages    │
+                    │ - Conversations
+                    │ - Subscriptions
+                    └────────────────┘
+```
+
+## Data Flow Diagram
+
+```
+INCOMING MESSAGE FROM INSTAGRAM
+        │
+        ▼
+┌───────────────────────────────────┐
+│ Meta Webhook Endpoint             │
+│ POST /api/webhook/instagram       │
+│ (Verify signature)                │
+└───────────┬───────────────────────┘
+            │
+            ▼
+┌───────────────────────────────────┐
+│ Extract Message Data              │
+│ - Sender ID                       │
+│ - Message Content                 │
+│ - Conversation ID                 │
+└───────────┬───────────────────────┘
+            │
+            ▼
+┌───────────────────────────────────┐
+│ Find/Create Conversation          │
+│ Update in MongoDB                 │
+└───────────┬───────────────────────┘
+            │
+            ▼
+┌───────────────────────────────────┐
+│ Load Active Rules for Account     │
+│ (Sorted by Priority)              │
+└───────────┬───────────────────────┘
+            │
+            ▼
+┌───────────────────────────────────┐
+│ Rule Matching Loop                │
+│                                   │
+│ For each rule:                    │
+│   - Check keyword match           │
+│   - Check trigger type            │
+│   - Check rate limits             │
+└───────────┬───────────────────────┘
+            │
+            ├─── NO MATCH ───┬──────────────────┐
+            │                │                  │
+            │                ▼                  ▼
+            │         Store & Exit      Log for Analysis
+            │
+            └─── MATCH ─────┬──────────────────┐
+                            │                  │
+                ┌───────────┴──────────────┐
+                │                          │
+                ▼                          ▼
+        ┌──────────────┐        ┌──────────────────┐
+        │ Predefined   │        │ AI Reply         │
+        │ Message?     │        │ (OpenAI API)     │
+        └──────┬───────┘        └────┬─────────────┘
+               │                     │
+               ▼                     ▼
+        ┌──────────────────────────────────┐
+        │ Apply Delay (if configured)      │
+        └──────┬───────────────────────────┘
+               │
+               ▼
+        ┌──────────────────────────────────┐
+        │ Send via Instagram API           │
+        │ Meta Graph API (Send Message)    │
+        └──────┬───────────────────────────┘
+               │
+               ├─── SUCCESS ───┬──────────────────┐
+               │               │                  │
+               │               ▼                  ▼
+               │         Update Rule Metrics  Update User Usage
+               │         - Increment triggers │
+               │         - Increment success  │ - Messages this month
+               │                              │ - AI replies used
+               │
+               └─── FAILURE ───┐
+                               │
+                               ▼
+                         Increment Failures
+                         Log Error
+                         Retry Queue (BullMQ)
+```
+
+## Component Interaction Flow
+
+```
+USER CREATES RULE
+        │
+        ▼
+┌─────────────────────────┐
+│ Frontend: RuleBuilder   │
+│ (Multi-step wizard)     │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│ API: POST /api/rules    │
+│ Include:                │
+│ - Account ID            │
+│ - Keywords              │
+│ - Reply Type            │
+│ - AI settings (if AI)   │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│ Middleware:             │
+│ - Verify JWT            │
+│ - Check plan limits     │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│ Service: ruleEngine.js  │
+│ - Validate data         │
+│ - Check keyword list    │
+├────────────┬────────────┤
+│            │            │
+│ Success    │   Error    │
+│            │            │
+└──────┬─────┴────┬───────┘
+       │          │
+       ▼          ▼
+    ┌─────────────────┐
+    │ Create in DB    │  Return Error
+    │ Update usage    │
+    │ counters        │
+    └────────┬────────┘
+             │
+             ▼
+        ┌──────────┐
+        │ Return   │
+        │ Success  │
+        └──────────┘
+```
+
+## Authentication Flow
+
+```
+USER LOGIN
+    │
+    ▼
+POST /api/auth/login
+│
+├─ Validate email/password
+│
+└─ Password match?
+   │
+   ├─ YES ───┬─ Generate JWT
+   │         │  - Payload: { id, email }
+   │         │  - Expires: 7 days
+   │         │
+   │         └─ Return { token, user }
+   │
+   └─ NO ──── Return 401 Error
+
+
+AUTHENTICATED REQUEST
+    │
+    ├─ GET /api/protected-route
+    │  Header: Authorization: Bearer <token>
+    │
+    ├─ Middleware: authenticate()
+    │  │
+    │  ├─ Extract token from header
+    │  │
+    │  ├─ Verify JWT signature
+    │  │
+    │  ├─ Valid?
+    │  │  ├─ YES → Set req.user = decoded, next()
+    │  │  └─ NO → Return 401
+    │
+    └─ Route handler receives req.user
+```
+
+## Stripe Webhook Flow
+
+```
+USER UPGRADES PLAN
+        │
+        ▼
+    ┌──────────────┐
+    │ Frontend:    │
+    │ Checkout     │
+    │ Component    │
+    └────────┬─────┘
+             │
+             ▼
+    ┌──────────────┐
+    │ POST         │
+    │ /checkout    │
+    └────────┬─────┘
+             │
+             ▼
+    ┌──────────────┐
+    │ Stripe       │
+    │ Checkout     │
+    │ Session      │
+    │ (Payment)    │
+    └────────┬─────┘
+             │
+    ┌────────┴────────┐
+    │                 │
+    ▼                 ▼
+SUCCESS          FAILURE
+    │                 │
+    │                 └─ User notified
+    │
+    ▼
+Meta Webhook
+"customer.subscription.created"
+    │
+    ▼
+Backend: POST /api/billing/webhook
+    │
+    ├─ Verify signature
+    │
+    ├─ Extract subscription details
+    │
+    ├─ Update User:
+    │  - Set plan
+    │  - Update limits
+    │  - Set expiration
+    │
+    ├─ Create Subscription doc
+    │
+    └─ Send welcome email
+```
+
+## Message Processing Architecture
+
+```
+┌─────────────────────────────────────────┐
+│     INCOMING MESSAGE QUEUE (BullMQ)     │
+│                                         │
+│  Priority Levels:                       │
+│  - HIGH: Keywords matched (fast)        │
+│  - NORMAL: Messages (standard)          │
+│  - LOW: Analytics processing            │
+└──────────────────┬──────────────────────┘
+                   │
+        ┌──────────┴──────────┐
+        │                     │
+        ▼                     ▼
+    ┌────────┐          ┌──────────┐
+    │Worker 1│          │Worker 2  │
+    │        │          │          │
+    │Process │          │Process   │
+    │Rules   │          │AI Gen    │
+    └────┬───┘          └────┬─────┘
+         │                   │
+         └───────────┬───────┘
+                     │
+                     ▼
+            ┌────────────────┐
+            │ Send via API   │
+            │ Update DB      │
+            │ Mark Complete  │
+            └────────────────┘
+```
+
+---
+
+## Technology Stack Summary
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Frontend** | Next.js 14 | React framework, SSR |
+| | React 18 | UI library |
+| | Tailwind CSS | Styling |
+| | Framer Motion | Animations |
+| | Three.js | 3D visualizations |
+| | Zustand | State management |
+| **Backend** | Node.js | Runtime |
+| | Express | Web framework |
+| | MongoDB | Database |
+| | Mongoose | ODM |
+| | JWT | Authentication |
+| | Stripe | Payment processing |
+| | OpenAI | AI replies |
+| | BullMQ | Job queue |
+| | Redis | Caching/Queue |
+| **Hosting** | Vercel | Frontend CDN |
+| | Render/Fly.io | Backend |
+| | MongoDB Atlas | Database |
+| | Upstash | Serverless Redis |
+
+---
+
+**Last Updated**: January 2024
