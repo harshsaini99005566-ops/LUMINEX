@@ -107,31 +107,17 @@ const startServer = async () => {
 
   // Root endpoint - Homepage
   app.get("/", (req, res) => {
-    res.send(`
-     <html>
-     <head><title>VEXORA</title></head>
-     <body>
-       <h1>VEXORA</h1>
-       <p>Instagram Automation SaaS Platform</p>
-     </body>
-     </html>
-     `);
+    res.send("<h1>VEXORA Home</h1><p>Instagram Automation Platform</p>");
   });
 
   // Privacy Policy endpoint
   app.get("/privacy", (req, res) => {
-    res.send(`
-     <h2>Privacy Policy</h2>
-     <p>We respect user privacy. We do not store personal data.</p>
-     `);
+    res.send("<h2>Privacy Policy</h2><p>Your privacy details here.</p>");
   });
 
   // Terms of Service endpoint
   app.get("/terms", (req, res) => {
-    res.send(`
-     <h2>Terms of Service</h2>
-     <p>This service is provided as-is.</p>
-     `);
+    res.send("<h2>Terms of Service</h2><p>Your terms here.</p>");
   });
 
   // Facebook OAuth routes (direct routes, no /api prefix) - only if credentials are available
@@ -209,24 +195,9 @@ const startServer = async () => {
   // Global error handler (must be last)
   app.use(errorHandler);
 
-  // Step 5: Start listening on port
   const PORT = process.env.PORT || 5001;
-
-  return new Promise((resolve, reject) => {
-    const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      resolve(server);
-    });
-
-    server.on("error", (error) => {
-      if (error.code === "EADDRINUSE") {
-        logger.error(`❌ Port ${PORT} is already in use`);
-        reject(error);
-      } else {
-        logger.error("Server error:", error);
-        reject(error);
-      }
-    });
+  app.listen(PORT, () => {
+    console.log("Server is running on port " + PORT);
   });
 };
 
