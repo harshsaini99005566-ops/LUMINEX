@@ -200,7 +200,7 @@ Name: PORT
 Value: 5000
 
 Name: DATABASE_URL
-Value: mongodb+srv://VEXORA:Harsh-112233@vexora.cjbhhw5.mongodb.net/?appName=VEXORA
+Value: mongodb+srv://LUMINEX:Harsh-112233@luminex.cjbhhw5.mongodb.net/?appName=LUMINEX
 
 Name: JWT_SECRET
 Value: [Generate random string: https://generate-secret.vercel.app]

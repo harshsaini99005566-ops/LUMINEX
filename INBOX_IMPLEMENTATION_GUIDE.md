@@ -1,8 +1,8 @@
-# VEXORA Unified Inbox - Complete Implementation Guide
+# LUMINEX Unified Inbox - Complete Implementation Guide
 
 ## Overview
 
-The VEXORA Unified Inbox is a complete Instagram conversation management system that provides real-time message handling, automation control, and intelligent conversation management. This system integrates with the rule-based automation engine to provide comprehensive inbox automation.
+The LUMINEX Unified Inbox is a complete Instagram conversation management system that provides real-time message handling, automation control, and intelligent conversation management. This system integrates with the rule-based automation engine to provide comprehensive inbox automation.
 
 ## Architecture
 

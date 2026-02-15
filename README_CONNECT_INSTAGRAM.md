@@ -1,6 +1,6 @@
-# VEXORA Instagram Connect
+# LUMINEX Instagram Connect
 
-Files in this implementation provide a complete Instagram connection flow using Meta OAuth for the VEXORA SaaS platform.
+Files in this implementation provide a complete Instagram connection flow using Meta OAuth for the LUMINEX SaaS platform.
 
 ## Backend Files
 
@@ -58,7 +58,7 @@ React page component for `/connect/instagram`:
 - Auto-redirects to `/dashboard` if user already connected Instagram
 - Auto-redirects to `/login` if not authenticated
 - Displays clean, centered UI with:
-  - VEXORA logo
+  - LUMINEX logo
   - Title: "Connect Instagram Account ✨"
   - Subtitle: "Only a few steps away to go Viral!"
   - Info card with Meta verification message and benefits
@@ -66,8 +66,8 @@ React page component for `/connect/instagram`:
   - Terms notice
   - Logout link
 
-### `frontend/src/components/VexoraLogo.jsx`
-Simple reusable logo component with SVG icon and "VEXORA" text.
+### `frontend/src/components/LuminexLogo.jsx`
+Simple reusable logo component with SVG icon and "LUMINEX" text.
 
 ### `frontend/package.json`
 Minimal dependencies: react, react-dom, react-scripts, Tailwind CSS (via create-react-app)
@@ -77,7 +77,7 @@ Minimal dependencies: react, react-dom, react-scripts, Tailwind CSS (via create-
 1. **Signup/Login** → Backend sets JWT in cookie or returns token
 2. **Navigate to `/connect/instagram`** → Frontend calls `/api/me`, shows connect page
 3. **Click "Login with Instagram"** → Redirects to `GET /auth/instagram`
-4. **Meta OAuth Dialog** → User authorizes VEXORA app
+4. **Meta OAuth Dialog** → User authorizes LUMINEX app
 5. **OAuth Callback** → Backend receives code, exchanges for token, finds IG account, saves to user
 6. **Redirect to `/dashboard`** → User is now connected
 

@@ -1,4 +1,4 @@
-# VEXORA Inbox - Integration Setup Guide
+# LUMINEX Inbox - Integration Setup Guide
 
 ## Quick Integration Steps
 
@@ -138,7 +138,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 // Database Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/vexora')
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/luminex')
   .then(() => logger.info('MongoDB connected'))
   .catch(err => logger.error('MongoDB connection error', err));
 
@@ -362,7 +362,7 @@ Create or update `.env.local` for frontend and `.env` for backend:
 
 ```env
 # backend/.env
-MONGODB_URI=mongodb://localhost:27017/vexora
+MONGODB_URI=mongodb://localhost:27017/luminex
 PORT=5000
 NODE_ENV=development
 DEBUG=true

@@ -1,4 +1,4 @@
-# VEXORA Unified Inbox - Quick Reference
+# LUMINEX Unified Inbox - Quick Reference
 
 ## File Locations
 
@@ -219,7 +219,7 @@ const response = await fetch('/api/conversations/conv123/automation', {
 
 ### Backend (.env)
 ```env
-MONGODB_URI=mongodb://localhost:27017/vexora
+MONGODB_URI=mongodb://localhost:27017/luminex
 PORT=5000
 NODE_ENV=development
 JWT_SECRET=your-secret

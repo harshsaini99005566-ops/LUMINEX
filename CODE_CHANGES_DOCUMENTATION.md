@@ -1,4 +1,4 @@
-# VEXORA - Code Changes Documentation
+# LUMINEX - Code Changes Documentation
 
 ## Overview
 Complete documentation of all code modifications to fix 6 TypeScript errors in the frontend.

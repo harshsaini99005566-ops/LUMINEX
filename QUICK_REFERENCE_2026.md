@@ -13,7 +13,7 @@ http://localhost:5001
 Status: ✅ Running Express.js
 
 # Database
-MongoDB Atlas: VEXORA cluster
+MongoDB Atlas: LUMINEX cluster
 Status: ✅ Connected
 ```
 
@@ -439,7 +439,7 @@ npm run lint         # Run linter
 ### Database
 ```bash
 # Connect to MongoDB Atlas
-# CLI: mongosh "mongodb+srv://VEXORA.cjbhhw5.mongodb.net/"
+# CLI: mongosh "mongodb+srv://LUMINEX.cjbhhw5.mongodb.net/"
 ```
 
 ---
@@ -489,7 +489,7 @@ curl http://localhost:5001/health
 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Production deployment |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System design |
 | [PROJECT_HEALTH_CHECK_2026.md](PROJECT_HEALTH_CHECK_2026.md) | Detailed health report |
-| [VEXORA_UI_ENHANCEMENT_VISUAL_SUMMARY.md](VEXORA_UI_ENHANCEMENT_VISUAL_SUMMARY.md) | UI improvements |
+| [LUMINEX_UI_ENHANCEMENT_VISUAL_SUMMARY.md](LUMINEX_UI_ENHANCEMENT_VISUAL_SUMMARY.md) | UI improvements |
 | [INSTAGRAM_OAUTH_INTEGRATION_GUIDE.md](INSTAGRAM_OAUTH_INTEGRATION_GUIDE.md) | OAuth setup |
 | [STRIPE_COMPLETE_SUMMARY.md](STRIPE_COMPLETE_SUMMARY.md) | Payments integration |
 | [META_API_INTEGRATION_GUIDE.md](META_API_INTEGRATION_GUIDE.md) | Instagram API |

@@ -142,7 +142,7 @@ Stay on page ✅
 ## Server Ports
 - **Frontend**: http://localhost:3000
 - **Backend**: http://localhost:5001
-- **MongoDB**: VEXORA cluster
+- **MongoDB**: LUMINEX cluster
 
 ---
 

@@ -23,7 +23,7 @@
 ✅ Backend server (port 5001)
 ✅ Frontend server (port 3000)
 ✅ Authentication system (fixed redirect loop)
-✅ Database connection (VEXORA MongoDB)
+✅ Database connection (LUMINEX MongoDB)
 ✅ API endpoints working
 ✅ User signup/login/dashboard flow
 ✅ Comprehensive logging throughout
@@ -74,7 +74,7 @@ Infrastructure:
 ```
 Frontend: http://localhost:3000
 Backend: http://localhost:5001/api
-Database: VEXORA MongoDB Atlas cluster
+Database: LUMINEX MongoDB Atlas cluster
 ```
 
 ---

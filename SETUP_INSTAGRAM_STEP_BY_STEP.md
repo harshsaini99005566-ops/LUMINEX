@@ -18,7 +18,7 @@
 📍 Location: My Apps (top right) → Create App
 
 Fill in these details:
-├─ App Name: "VEXORA" (or your project name)
+├─ App Name: "LUMINEX" (or your project name)
 ├─ App Contact Email: your@email.com
 ├─ App Purpose: Select "Business" or "Apps for Instagram"
 ├─ App Type: Select "Business"

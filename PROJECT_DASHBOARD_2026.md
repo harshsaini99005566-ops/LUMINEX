@@ -42,7 +42,7 @@
 │                        DATABASE                                          │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ Provider      │ MongoDB Atlas                                            │
-│ Cluster       │ VEXORA                                                   │
+│ Cluster       │ LUMINEX                                                   │
 │ Status        │ ✅ Connected & Healthy                                  │
 │ Collections   │ 5 (Users, Rules, Messages, Analytics, Webhooks)        │
 │ Backup        │ ✅ Configured                                           │

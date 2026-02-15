@@ -10,6 +10,8 @@ const { checkAccountLimit } = require('../middleware/subscription');
 const {
   generateAuthUrl,
   exchangeCodeForToken,
+  exchangeForLongLivedToken,
+  refreshLongLivedToken,
   getBusinessAccountInfo,
   subscribeToWebhook,
   sendInstagramMessage,
@@ -107,11 +109,24 @@ router.get('/auth/callback', async (req, res) => {
 
     const userId = user._id;
 
-    // Exchange code for token
-    const { accessToken, instagramId } = await exchangeCodeForToken(code);
+    // Exchange code for SHORT-LIVED token (expires in 1 hour)
+    const { accessToken: shortLivedToken, instagramId } = await exchangeCodeForToken(code);
 
-    // Get account info
-    const accountInfo = await getBusinessAccountInfo(accessToken, instagramId);
+    logger.info('[OAuth Callback] Short-lived token obtained', { instagramId });
+
+    // CRITICAL: Exchange short-lived token for LONG-LIVED token (expires in 60 days)
+    const { accessToken: longLivedToken, expiresIn } = await exchangeForLongLivedToken(shortLivedToken);
+    
+    // Calculate expiration date
+    const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000);
+
+    logger.info('[OAuth Callback] Long-lived token obtained', { 
+      expiresAt: tokenExpiresAt.toISOString(),
+      expiresInDays: Math.floor(expiresIn / (60 * 60 * 24))
+    });
+
+    // Get account info (use long-lived token)
+    const accountInfo = await getBusinessAccountInfo(longLivedToken, instagramId);
 
     // Check if account already connected
     let account = await InstagramAccount.findOne({
@@ -121,7 +136,8 @@ router.get('/auth/callback', async (req, res) => {
 
     if (account) {
       // Update existing account
-      account.accessToken = accessToken;
+      account.accessToken = longLivedToken;
+      account.tokenExpiresAt = tokenExpiresAt;
       account.username = accountInfo.username;
       account.name = accountInfo.name;
       account.profilePicture = accountInfo.profile_picture_url;
@@ -142,9 +158,11 @@ router.get('/auth/callback', async (req, res) => {
         profilePicture: accountInfo.profile_picture_url,
         followersCount: accountInfo.followers_count || 0,
         websiteUrl: accountInfo.website || '',
-        accessToken,
+        accessToken: longLivedToken,
+        tokenExpiresAt: tokenExpiresAt,
         isActive: true,
         connectedAt: new Date(),
+        lastTokenRefresh: new Date(),
         syncStatus: 'synced',
       });
 
@@ -153,7 +171,7 @@ router.get('/auth/callback', async (req, res) => {
 
     // Subscribe to webhooks
     try {
-      await subscribeToWebhook(accessToken, instagramId);
+      await subscribeToWebhook(longLivedToken, instagramId);
       logger.info('[OAuth Callback] Webhook subscribed');
     } catch (error) {
       logger.warn('[OAuth Callback] Webhook subscription failed', error.message);

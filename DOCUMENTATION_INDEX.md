@@ -1,6 +1,6 @@
 # 📚 PROJECT DOCUMENTATION INDEX
 
-**Project:** VEXORA Instagram Automation SaaS  
+**Project:** LUMINEX Instagram Automation SaaS  
 **Last Updated:** January 28, 2026  
 **Status:** ✅ All Issues Resolved - Ready for Deployment
 
@@ -113,7 +113,7 @@ node backend/scripts/testMongoConnection.js
 ### Services
 - ✅ **Backend API** - Running on port 5001
 - ✅ **Frontend Dev** - Running on port 3000/3001
-- ✅ **MongoDB** - Connected to VEXORA cluster
+- ✅ **MongoDB** - Connected to LUMINEX cluster
 - ✅ **Database** - Connected to 'test' database
 
 ### Health Indicators
@@ -205,7 +205,7 @@ node backend/scripts/testMongoConnection.js
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                  VEXORA SYSTEM ARCHITECTURE              │
+│                  LUMINEX SYSTEM ARCHITECTURE              │
 ├─────────────────────────────────────────────────────────┤
 │                                                           │
 │  ┌──────────────────┐          ┌──────────────────┐     │
@@ -218,7 +218,7 @@ node backend/scripts/testMongoConnection.js
 │                              ┌──────────────────┐        │
 │                              │    DATABASE      │        │
 │                              │   (MongoDB)      │        │
-│                              │  VEXORA Cluster  │        │
+│                              │  LUMINEX Cluster  │        │
 │                              └──────────────────┘        │
 │                                                           │
 ├─────────────────────────────────────────────────────────┤

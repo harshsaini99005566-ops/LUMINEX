@@ -83,6 +83,7 @@ const config = {
     appSecret: process.env.INSTAGRAM_APP_SECRET,
     webhookToken: process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN,
     apiVersion: process.env.INSTAGRAM_API_VERSION || "v18.0",
+    redirectUri: process.env.INSTAGRAM_REDIRECT_URI,
     webhookUrl:
       process.env.INSTAGRAM_WEBHOOK_URL ||
       `${process.env.API_URL}/api/webhooks/instagram`,

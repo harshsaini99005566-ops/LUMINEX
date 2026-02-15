@@ -1,8 +1,8 @@
-# VEXORA Unified Inbox - Documentation Index
+# LUMINEX Unified Inbox - Documentation Index
 
 ## Overview
 
-The VEXORA Unified Inbox is a complete, production-ready Instagram conversation management system. This index helps you navigate all available documentation and resources.
+The LUMINEX Unified Inbox is a complete, production-ready Instagram conversation management system. This index helps you navigate all available documentation and resources.
 
 ## Start Here
 

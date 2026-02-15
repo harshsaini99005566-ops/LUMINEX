@@ -1,10 +1,10 @@
-# VEXORA Unified Inbox - Visual Overview
+# LUMINEX Unified Inbox - Visual Overview
 
 ## System Architecture Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     VEXORA UNIFIED INBOX                       │
+│                     LUMINEX UNIFIED INBOX                       │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌──────────────────────────┐        ┌──────────────────────┐ │
@@ -414,7 +414,7 @@ Timeline for Conversation with Participant: @john_doe
 ## Integration Points
 
 ```
-VEXORA Unified Inbox
+LUMINEX Unified Inbox
        │
        ├─────────────────► Rule Engine
        │                  (Process incoming messages)

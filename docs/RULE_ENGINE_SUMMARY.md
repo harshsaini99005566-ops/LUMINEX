@@ -2,7 +2,7 @@
 
 ## 🎯 Project Completion
 
-The production-grade Rule-Based Automation Engine for VEXORA has been fully implemented with all requested features and more.
+The production-grade Rule-Based Automation Engine for LUMINEX has been fully implemented with all requested features and more.
 
 ## 📦 Deliverables
 

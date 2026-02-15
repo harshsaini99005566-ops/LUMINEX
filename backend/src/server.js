@@ -4,7 +4,8 @@ const cors = require("cors");
 const compression = require("compression");
 const session = require("express-session");
 const dotenv = require("dotenv");
-dotenv.config();
+const path = require("path");
+dotenv.config({ path: path.join(__dirname, '../.env') });
 console.log("IG APP ID:", process.env.INSTAGRAM_APP_ID);
 
 mongoose
@@ -107,7 +108,7 @@ const startServer = async () => {
 
   // Root endpoint - Homepage
   app.get("/", (req, res) => {
-    res.send("<h1>VEXORA Home</h1><p>Instagram Automation Platform</p>");
+    res.send("<h1>LUMINEX Home</h1><p>Instagram Automation Platform</p>");
   });
 
   // Privacy Policy endpoint
@@ -182,7 +183,8 @@ const startServer = async () => {
   // Start scheduled jobs
   try {
     require("./jobs/resetMonthlyUsage");
-    logger.info("✅ Scheduled jobs started");
+    require("./jobs/refreshInstagramTokens");
+    logger.info("✅ Scheduled jobs started (usage reset, token refresh)");
   } catch (jobError) {
     logger.warn("Scheduled jobs not available", { error: jobError.message });
   }

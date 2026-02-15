@@ -81,8 +81,17 @@ export default function SignupPage() {
         const errorMessage = typeof data.error === 'string' ? data.error : (data.error?.message || 'Failed to create account')
         setErrors({ general: errorMessage })
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Network error. Please check your connection.'
+    } catch (error: any) {
+      // Extract error message from axios error response
+      let errorMessage = 'Network error. Please check your connection.'
+      
+      if (error.response?.data?.error) {
+        // Backend returned an error message
+        errorMessage = error.response.data.error
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
       setErrors({ general: errorMessage })
     } finally {
       setLoading(false)

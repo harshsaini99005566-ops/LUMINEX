@@ -38,10 +38,20 @@ export default function LoginPage() {
         const errorMessage = typeof data.error === 'string' ? data.error : 'Login failed'
         setError(errorMessage)
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '';
-      const suggestion = `Network error. Ensure backend is running at ${process.env.NEXT_PUBLIC_API_URL} and CORS allows requests from this origin.`;
-      setError(errorMessage ? `${errorMessage} — ${suggestion}` : suggestion);
+    } catch (error: any) {
+      // Extract error message from axios error response
+      let errorMessage = ''
+      
+      if (error.response?.data?.error) {
+        // Backend returned an error message
+        errorMessage = error.response.data.error
+      } else if (error.message) {
+        errorMessage = error.message
+      } else {
+        errorMessage = `Network error. Ensure backend is running at ${process.env.NEXT_PUBLIC_API_URL} and CORS allows requests from this origin.`
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

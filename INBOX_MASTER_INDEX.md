@@ -1,4 +1,4 @@
-# VEXORA Unified Inbox - Master Index & Getting Started
+# LUMINEX Unified Inbox - Master Index & Getting Started
 
 ## 🎯 Quick Start
 
@@ -561,7 +561,7 @@ You'll know it's working when:
 
 ## 🙏 Thank You
 
-Thank you for using VEXORA Unified Inbox. All documentation, code, and resources are provided to ensure successful implementation.
+Thank you for using LUMINEX Unified Inbox. All documentation, code, and resources are provided to ensure successful implementation.
 
 For questions, refer to the appropriate documentation:
 - **Setup Issues?** → INBOX_SETUP_GUIDE.md

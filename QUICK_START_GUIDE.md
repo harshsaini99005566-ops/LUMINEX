@@ -1,4 +1,4 @@
-# 🚀 QUICK START GUIDE - VEXORA PROJECT
+# 🚀 QUICK START GUIDE - LUMINEX PROJECT
 
 ## Prerequisites
 
@@ -127,7 +127,7 @@ Version: 8.0.18
 ```
 NODE_ENV=development
 PORT=5001
-MONGODB_URI=mongodb+srv://VEXORA:Harsh-112233@vexora.cjbhhw5.mongodb.net/?appName=VEXORA
+MONGODB_URI=mongodb+srv://LUMINEX:Harsh-112233@luminex.cjbhhw5.mongodb.net/?appName=LUMINEX
 JWT_SECRET=dev_jwt_secret
 FRONTEND_URL=http://localhost:3000
 API_URL=http://localhost:5001
@@ -181,7 +181,7 @@ npm install
 ## Architecture Overview
 
 ```
-VEXORA
+LUMINEX
 ├── Backend (Node.js + Express)
 │   ├── Routes (auth, instagram, messages, etc.)
 │   ├── Models (User, Conversation, Message, etc.)

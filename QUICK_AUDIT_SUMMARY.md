@@ -20,7 +20,7 @@
 |-----------|--------|------|
 | Backend Server | ✅ Running | 5001 |
 | Frontend Server | ✅ Running | 3000 |
-| MongoDB | ✅ Connected | VEXORA Cloud |
+| MongoDB | ✅ Connected | LUMINEX Cloud |
 | API Routes | ✅ All Tested | 4/4 PASS |
 
 ## 📊 Test Results

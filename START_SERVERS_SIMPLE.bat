@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 echo.
 echo ========================================
-echo     VEXORA - Server Startup
+echo     LUMINEX - Server Startup
 echo ========================================
 echo.
 
@@ -16,7 +16,7 @@ REM Start Backend
 echo.
 echo Starting Backend Server (Port 5001)...
 cd /d "e:\INSTA AUTOMATION\backend"
-start "VEXORA Backend" npm run start
+start "LUMINEX Backend" npm run start
 
 REM Wait for backend
 echo Waiting 5 seconds for backend to initialize...
@@ -26,7 +26,7 @@ REM Start Frontend
 echo.
 echo Starting Frontend Server (Port 3000/3001)...
 cd /d "e:\INSTA AUTOMATION\frontend"
-start "VEXORA Frontend" npm run dev
+start "LUMINEX Frontend" npm run dev
 
 echo.
 echo ========================================
@@ -37,7 +37,7 @@ echo Backend:  http://localhost:5001
 echo Frontend: http://localhost:3000
 echo           (or http://localhost:3001 if port 3000 in use)
 echo.
-echo MongoDB:  Connected to VEXORA cluster
+echo MongoDB:  Connected to LUMINEX cluster
 echo.
 echo Open your browser and navigate to:
 echo http://localhost:3000

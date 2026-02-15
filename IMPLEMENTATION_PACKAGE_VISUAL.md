@@ -327,7 +327,7 @@ frontend/       → Next.js app
 ### EXTERNAL ACCOUNTS
 ```
 GitHub         → Your code repository
-MongoDB Atlas  → Your database (VEXORA cluster)
+MongoDB Atlas  → Your database (LUMINEX cluster)
 SendGrid       → Email service (setup Wed)
 Stripe         → Payments (setup Week 3)
 Railway        → Backend deployment (setup Week 4)

@@ -1,8 +1,8 @@
-# VEXORA Unified Inbox - Implementation Summary
+# LUMINEX Unified Inbox - Implementation Summary
 
 ## What Was Built
 
-A complete, production-ready Instagram conversation management system for the VEXORA platform, enabling users to manage conversations, send replies, control automation, and gain insights through a modern web interface.
+A complete, production-ready Instagram conversation management system for the LUMINEX platform, enabling users to manage conversations, send replies, control automation, and gain insights through a modern web interface.
 
 ## Components Delivered
 
@@ -357,7 +357,7 @@ socket.emit('automation:toggled', { conversationId, enabled })
 ## Quality Metrics
 
 ### Code Quality
-- **Code Style:** Consistent with existing VEXORA codebase
+- **Code Style:** Consistent with existing LUMINEX codebase
 - **Error Handling:** Comprehensive try-catch with specific errors
 - **Validation:** Input validation on all endpoints
 - **Logging:** Debug and error logging at key points
@@ -459,7 +459,7 @@ Listed in INBOX_IMPLEMENTATION_GUIDE.md:
 
 ## Summary
 
-The VEXORA Unified Inbox is a complete, production-ready conversation management system providing:
+The LUMINEX Unified Inbox is a complete, production-ready conversation management system providing:
 
 ✅ **Backend:** Full-featured ConversationService with 10 core methods
 ✅ **Frontend:** Responsive UI with ConversationList and ChatDisplay components

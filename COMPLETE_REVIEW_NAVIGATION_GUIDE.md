@@ -1,4 +1,4 @@
-# 📑 VEXORA Complete Project Review - Navigation Guide
+# 📑 LUMINEX Complete Project Review - Navigation Guide
 
 ## Quick Summary
 

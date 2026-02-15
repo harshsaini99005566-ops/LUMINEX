@@ -1,4 +1,4 @@
-# Rule-Based Automation Engine for VEXORA
+# Rule-Based Automation Engine for LUMINEX
 
 > Production-grade intelligent message automation system for Instagram Direct Messages
 
@@ -405,4 +405,4 @@ MIT
 **Version**: 1.0.0  
 **Status**: Production Ready ✅  
 **Last Updated**: January 27, 2026  
-**Maintained By**: VEXORA Development Team
+**Maintained By**: LUMINEX Development Team

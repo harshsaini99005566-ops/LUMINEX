@@ -280,6 +280,6 @@ if (!token && typeof window !== 'undefined') {
 
 ✅ **Backend**: http://localhost:5001 - Running
 ✅ **Frontend**: http://localhost:3000 - Running
-✅ **Database**: MongoDB connected to VEXORA cluster
+✅ **Database**: MongoDB connected to LUMINEX cluster
 
 **Ready for testing!** 🚀

@@ -101,6 +101,85 @@ const getBusinessAccountInfo = async (accessToken, instagramId) => {
 };
 
 /**
+ * Exchange short-lived token for long-lived token (60 days)
+ * CRITICAL: Must be called immediately after getting short token from OAuth
+ * @param {string} shortLivedToken - Short-lived access token from OAuth callback
+ * @returns {Promise<{accessToken: string, expiresIn: number}>}
+ */
+const exchangeForLongLivedToken = async (shortLivedToken) => {
+  try {
+    const response = await axios.get(
+      "https://graph.instagram.com/access_token",
+      {
+        params: {
+          grant_type: "ig_exchange_token",
+          client_secret: config.instagram.appSecret,
+          access_token: shortLivedToken,
+        },
+      }
+    );
+
+    const { access_token, expires_in } = response.data;
+
+    logger.info("[Token Exchange] Short token exchanged for long-lived token", {
+      expiresIn: expires_in,
+      expiresInDays: Math.floor(expires_in / (60 * 60 * 24)),
+      tokenSnippet: `${access_token.substring(0, 10)}...`,
+    });
+
+    return {
+      accessToken: access_token,
+      expiresIn: expires_in, // ~5184000 seconds = 60 days
+    };
+  } catch (error) {
+    logger.error(
+      "[Token Exchange] Failed to exchange for long-lived token",
+      error.response?.data || error.message,
+    );
+    throw new Error("Failed to exchange short-lived token for long-lived token");
+  }
+};
+
+/**
+ * Refresh long-lived token (extends expiration by 60 days)
+ * Should be called every 30 days to prevent token expiration
+ * @param {string} longLivedToken - Current long-lived access token
+ * @returns {Promise<{accessToken: string, expiresIn: number}>}
+ */
+const refreshLongLivedToken = async (longLivedToken) => {
+  try {
+    const response = await axios.get(
+      "https://graph.instagram.com/refresh_access_token",
+      {
+        params: {
+          grant_type: "ig_refresh_token",
+          access_token: longLivedToken,
+        },
+      }
+    );
+
+    const { access_token, expires_in } = response.data;
+
+    logger.info("[Token Refresh] Long-lived token refreshed", {
+      expiresIn: expires_in,
+      expiresInDays: Math.floor(expires_in / (60 * 60 * 24)),
+      tokenSnippet: `${access_token.substring(0, 10)}...`,
+    });
+
+    return {
+      accessToken: access_token,
+      expiresIn: expires_in, // ~5184000 seconds = 60 days
+    };
+  } catch (error) {
+    logger.error(
+      "[Token Refresh] Failed to refresh long-lived token",
+      error.response?.data || error.message,
+    );
+    throw new Error("Failed to refresh long-lived token");
+  }
+};
+
+/**
  * Subscribe to Instagram webhooks
  * @param {string} accessToken - Access token
  * @param {string} instagramId - Instagram business account ID
@@ -194,6 +273,8 @@ const getConversations = async (account) => {
 module.exports = {
   generateAuthUrl,
   exchangeCodeForToken,
+  exchangeForLongLivedToken,
+  refreshLongLivedToken,
   getBusinessAccountInfo,
   subscribeToWebhook,
   sendInstagramMessage,

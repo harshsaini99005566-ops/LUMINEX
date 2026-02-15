@@ -1,9 +1,9 @@
 #!/usr/bin/env powershell
-# VEXORA Server Startup Script
+# LUMINEX Server Startup Script
 # Starts backend and frontend servers with proper error handling
 
 Write-Host "================================" -ForegroundColor Green
-Write-Host "VEXORA Server Startup" -ForegroundColor Green
+Write-Host "LUMINEX Server Startup" -ForegroundColor Green
 Write-Host "================================" -ForegroundColor Green
 Write-Host ""
 

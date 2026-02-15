@@ -245,7 +245,7 @@ router.post('/signup', async (req, res, next) => {
 ⚠️ The current MongoDB connection is showing authentication errors. This doesn't affect signup functionality because:
 1. The API continues to run without database
 2. For full functionality, please verify:
-   - Username: VEXORA
+   - Username: LUMINEX
    - Password: Harsh-112233
    - IP whitelist settings in MongoDB Atlas
    - Network connectivity to MongoDB cluster

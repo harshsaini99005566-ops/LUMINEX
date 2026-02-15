@@ -13,7 +13,7 @@ const testConnection = async () => {
     
     console.log('✅ MongoDB connection successful!');
     console.log('📊 Connection state:', mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected');
-    console.log('🗄️  Database: VEXORA');
+    console.log('🗄️  Database: LUMINEX');
     
     // List collections
     const collections = await mongoose.connection.db.listCollections().toArray();

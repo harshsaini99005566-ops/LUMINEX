@@ -102,7 +102,7 @@ const Inbox: React.FC<InboxProps> = ({ onLogout }) => {
         <div className="flex items-center gap-3">
           <MessageCircle className="w-6 h-6" />
           <div>
-            <h1 className="text-lg font-bold">VEXORA Inbox</h1>
+            <h1 className="text-lg font-bold">LUMINEX Inbox</h1>
             <p className="text-xs opacity-90">Instagram Automation Manager</p>
           </div>
         </div>

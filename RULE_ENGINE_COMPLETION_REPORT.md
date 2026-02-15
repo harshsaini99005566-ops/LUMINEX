@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║         RULE-BASED AUTOMATION ENGINE FOR VEXORA - COMPLETION SUMMARY        ║
+┃         RULE-BASED AUTOMATION ENGINE FOR LUMINEX - COMPLETION SUMMARY        ┃
 ║                         Production Ready ✅ Jan 27, 2026                     ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝

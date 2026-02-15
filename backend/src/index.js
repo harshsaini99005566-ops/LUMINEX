@@ -1,2 +1,2 @@
-// Entry point for VEXORA backend
+// Entry point for LUMINEX backend
 require('./server');

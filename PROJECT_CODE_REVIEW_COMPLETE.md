@@ -178,8 +178,8 @@ const conditionalEnvVars = {
 
 ```
 ✅ MongoDB connected successfully
-✅ Using credentials: VEXORA/****
-✅ Cluster: vexora.cjbhhw5.mongodb.net
+✅ Using credentials: LUMINEX/****
+✅ Cluster: luminex.cjbhhw5.mongodb.net
 ✅ Version: 8.0.18
 ```
 
@@ -222,7 +222,7 @@ const conditionalEnvVars = {
 
 - ✅ Backend API: `http://localhost:5001`
 - ✅ Frontend Dev: `http://localhost:3000` (or 3001 if 3000 in use)
-- ✅ MongoDB: Connected to VEXORA cluster
+- ✅ MongoDB: Connected to LUMINEX cluster
 - ✅ Database: Connected to 'test' database
 
 ### Available Endpoints:

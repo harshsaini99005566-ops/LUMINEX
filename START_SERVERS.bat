@@ -1,10 +1,10 @@
 @echo off
-REM VEXORA Server Startup Script
+REM LUMINEX Server Startup Script
 REM Starts both backend and frontend servers
 
 echo.
 echo ╔════════════════════════════════════════════════════════════╗
-echo ║          VEXORA - Starting Servers                         ║
+echo ┃          LUMINEX - Starting Servers                         ┃
 echo ╚════════════════════════════════════════════════════════════╝
 echo.
 
@@ -34,7 +34,7 @@ echo ║                    SERVERS STARTING                        ║
 echo ╠════════════════════════════════════════════════════════════╣
 echo ║  Backend:  http://localhost:5001                           ║
 echo ║  Frontend: http://localhost:3000 (or 3001 if in use)       ║
-echo ║  MongoDB:  Connected to VEXORA cluster                     ║
+echo ┃  MongoDB:  Connected to LUMINEX cluster                     ┃
 echo ╠════════════════════════════════════════════════════════════╣
 echo ║  Health Check:  curl http://localhost:5001/health          ║
 echo ║  API Info:      curl http://localhost:5001/                ║

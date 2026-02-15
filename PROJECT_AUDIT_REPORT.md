@@ -76,7 +76,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 ### Backend Status
 ```
 ✅ Server: Running on port 5001
-✅ Database: Connected to VEXORA MongoDB cluster
+✅ Database: Connected to LUMINEX MongoDB cluster
 ✅ Environment: development
 ✅ CORS: Enabled for http://localhost:3000
 ```
@@ -104,7 +104,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 |-----------|--------|---------|
 | Backend Server | ✅ Running | Port 5001, MongoDB connected |
 | Frontend Server | ✅ Running | Port 3000, Next.js ready |
-| Database | ✅ Connected | VEXORA cluster, 6 collections |
+| Database | ✅ Connected | LUMINEX cluster, 6 collections |
 | API Routes | ✅ Functional | All core routes tested |
 | Error Handling | ✅ Improved | Login/Dashboard error messages added |
 | Environment Config | ✅ Fixed | Ports aligned across project |
@@ -117,7 +117,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
 ```env
 NODE_ENV=development
 PORT=5001
-MONGODB_URI=mongodb+srv://VEXORA:Harsh-112233@vexora.cjbhhw5.mongodb.net/?appName=VEXORA
+MONGODB_URI=mongodb+srv://LUMINEX:Harsh-112233@luminex.cjbhhw5.mongodb.net/?appName=LUMINEX
 JWT_SECRET=dev_jwt_secret
 FRONTEND_URL=http://localhost:3000
 API_URL=http://localhost:5001
@@ -147,7 +147,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5001
 ### Running Services
 - **Frontend**: http://localhost:3000 ✅
 - **Backend API**: http://localhost:5001 ✅
-- **MongoDB**: Connected to VEXORA cluster ✅
+- **MongoDB**: Connected to LUMINEX cluster ✅
 
 ### Ready to Test
 - ✅ Sign up flow
