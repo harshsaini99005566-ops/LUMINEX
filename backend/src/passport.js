@@ -12,8 +12,7 @@ if (!process.env.FB_APP_ID || !process.env.FB_APP_SECRET) {
       {
         clientID: process.env.FB_APP_ID,
         clientSecret: process.env.FB_APP_SECRET,
-        callbackURL:
-          "https://momentarily-unpurchased-jarred.ngrok-free.dev/api/auth/facebook/callback",
+        callbackURL: process.env.FACEBOOK_CALLBACK_URL,
         profileFields: ["id", "displayName", "emails"],
       },
       function (accessToken, refreshToken, profile, done) {

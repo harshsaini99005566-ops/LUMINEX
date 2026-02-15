@@ -8,14 +8,6 @@ const path = require("path");
 dotenv.config({ path: path.join(__dirname, '../.env') });
 console.log("IG APP ID:", process.env.INSTAGRAM_APP_ID);
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected successfully");
-  })
-  .catch((err) => {
-    console.error("MongoDB connection failed", err.message);
-  });
 const { connectDB, getDBStatus } = require("../config/database");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 const { authLimiter, apiLimiter } = require("./middleware/rateLimiter");
@@ -93,6 +85,25 @@ const startServer = async () => {
 
   // Step 6: Setup routes
 
+  const renderPage = (title, bodyHtml) => `
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>${title}</title>
+        <style>
+          body { font-family: Arial, sans-serif; color: #111; margin: 40px; line-height: 1.6; }
+          h1 { margin-bottom: 12px; }
+          p { margin: 8px 0; }
+        </style>
+      </head>
+      <body>
+        ${bodyHtml}
+      </body>
+    </html>
+  `;
+
   // Health check endpoint - includes DB status
   app.get("/health", (req, res) => {
     const dbStatus = getDBStatus();
@@ -113,12 +124,32 @@ const startServer = async () => {
 
   // Privacy Policy endpoint
   app.get("/privacy", (req, res) => {
-    res.send("<h2>Privacy Policy</h2><p>Your privacy details here.</p>");
+    res.send(
+      renderPage(
+        "LUMINEX Privacy Policy",
+        `
+          <h1>LUMINEX Privacy Policy</h1>
+          <p>We only use data for Meta integrations.</p>
+          <p>We do not sell, share, or misuse user data.</p>
+          <p>All data is used strictly for automation services requested by the user.</p>
+        `,
+      ),
+    );
   });
 
   // Terms of Service endpoint
   app.get("/terms", (req, res) => {
-    res.send("<h2>Terms of Service</h2><p>Your terms here.</p>");
+    res.send(
+      renderPage(
+        "LUMINEX Terms of Service",
+        `
+          <h1>LUMINEX Terms of Service</h1>
+          <p>By using LUMINEX, you agree to use the service lawfully and only for authorized automation.</p>
+          <p>You are responsible for the content you connect and any actions taken through your account.</p>
+          <p>Service availability and features may change over time.</p>
+        `,
+      ),
+    );
   });
 
   // Facebook OAuth routes (direct routes, no /api prefix) - only if credentials are available
