@@ -51,6 +51,14 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const { token } = useAuthStore.getState();
+        
+        // If no token or malformed token, clear everything and reject
+        if (!token) {
+          console.log('[API] No token available for refresh, logging out');
+          useAuthStore.getState().logout();
+          return Promise.reject(error);
+        }
+        
         // Call refresh endpoint
         const response = await axios.post(
           `${API_BASE_URL}/auth/refresh`,
@@ -69,6 +77,7 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
+        console.log('[API] Token refresh failed, clearing session');
         useAuthStore.getState().logout();
         return Promise.reject(refreshError);
       }

@@ -20,6 +20,11 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    
+    // Clear any old tokens before attempting login
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    
     try {
       const data = await authAPI.login(email, password)
 
@@ -39,12 +44,21 @@ export default function LoginPage() {
         setError(errorMessage)
       }
     } catch (error: any) {
+      // Clear tokens on login failure to prevent "invalid token" errors
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      
       // Extract error message from axios error response
       let errorMessage = ''
       
       if (error.response?.data?.error) {
         // Backend returned an error message
         errorMessage = error.response.data.error
+        
+        // Provide helpful hints for common errors
+        if (errorMessage === 'Invalid credentials') {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.'
+        }
       } else if (error.message) {
         errorMessage = error.message
       } else {

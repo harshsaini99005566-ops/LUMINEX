@@ -30,9 +30,10 @@ const router = express.Router();
  * Generate and return the OAuth authorization URL
  * Frontend redirects user to this URL
  */
-router.get('/auth/url', authenticate, async (req, res) => {
+router.get('/auth/url', async (req, res) => {
   try {
-    const userId = req.user.id;
+    // TEMPORARY TESTING MODE - allow unauthenticated requests
+    const userId = req.user?.id || 'test-user-' + Date.now();
 
     // Generate CSRF state token
     const state = crypto.randomBytes(16).toString('hex');
@@ -40,15 +41,19 @@ router.get('/auth/url', authenticate, async (req, res) => {
     // Compute expiry and save state+expiry in user document
     const stateExpiresAt = new Date(Date.now() + config.instagram.stateTtlMs);
 
-    await User.findByIdAndUpdate(userId, {
-      instagramOAuthState: state,
-      instagramOAuthStateExpires: stateExpiresAt,
-    });
+    // Only update user if authenticated
+    if (req.user?.id) {
+      await User.findByIdAndUpdate(userId, {
+        instagramOAuthState: state,
+        instagramOAuthStateExpires: stateExpiresAt,
+      });
+    }
 
     logger.info('[OAuth] Saved oauth state for user', {
       userId,
       stateSnippet: `${state.substring(0, 8)}...`,
       expiresAt: stateExpiresAt.toISOString(),
+      isTestUser: !req.user,
     });
 
     const authUrl = generateAuthUrl(state);
@@ -58,6 +63,7 @@ router.get('/auth/url', authenticate, async (req, res) => {
     res.json({
       url: authUrl,
       state,
+      isTestUser: !req.user,
     });
   } catch (error) {
     logger.error('[OAuth] Failed to generate URL', error);

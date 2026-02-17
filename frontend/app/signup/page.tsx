@@ -56,6 +56,10 @@ export default function SignupPage() {
     e.preventDefault()
     setErrors({})
     setSuccessMessage('')
+    
+    // Clear any old tokens before signup
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
 
     const validationErrors = validateForm(email, password, firstName, lastName)
     if (Object.keys(validationErrors).length > 0) {
@@ -82,6 +86,10 @@ export default function SignupPage() {
         setErrors({ general: errorMessage })
       }
     } catch (error: any) {
+      // Clear tokens on signup failure  
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      
       // Extract error message from axios error response
       let errorMessage = 'Network error. Please check your connection.'
       
