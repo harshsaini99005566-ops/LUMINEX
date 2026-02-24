@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CyberButton, CyberCard } from '@/components/CyberUI'
 import { CyberGrid } from '@/components/CyberGrid'
@@ -18,15 +19,48 @@ interface InstagramAccount {
   createdAt: string
 }
 
+interface FacebookPage {
+  id: string
+  name: string
+  access_token?: string
+  instagram_account?: {
+    id: string
+    username: string
+    profile_picture_url?: string
+  }
+}
+
 export default function AccountsPage() {
+  const searchParams = useSearchParams()
   const [accounts, setAccounts] = useState<InstagramAccount[]>([])
+  const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [connecting, setConnecting] = useState(false)
 
   useEffect(() => {
     fetchAccounts()
-  }, [])
+    
+    // Check for Facebook OAuth success
+    const fbOauth = searchParams.get('fb_oauth')
+    const fbError = searchParams.get('error')
+    const fbPages = searchParams.get('pages')
+    const fbUser = searchParams.get('user')
+    
+    if (fbOauth === 'success') {
+      setSuccess(`✅ Successfully connected to Facebook! Found ${fbPages || 0} page(s). Welcome ${fbUser || 'User'}!`)
+      fetchFacebookPages()
+      // Clear URL params
+      window.history.replaceState({}, '', '/dashboard/accounts')
+    }
+    
+    if (fbError) {
+      setError(`Facebook connection error: ${fbError}`)
+      // Clear URL params
+      window.history.replaceState({}, '', '/dashboard/accounts')
+    }
+  }, [searchParams])
 
   const fetchAccounts = async () => {
     const token = localStorage.getItem('token')
@@ -43,6 +77,27 @@ export default function AccountsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const fetchFacebookPages = async () => {
+    const token = localStorage.getItem('token')
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/facebook/pages`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (data.pages) {
+        setFacebookPages(data.pages)
+      }
+    } catch (error) {
+      console.error('Error fetching Facebook pages:', error)
+    }
+  }
+
+  const handleConnectFacebook = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
+    window.location.href = `${apiUrl}/api/auth/facebook`
   }
 
   const handleConnectSuccess = () => {
@@ -104,6 +159,17 @@ export default function AccountsPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-8 relative z-10">
+        {/* Success Message */}
+        {success && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 font-mono text-sm"
+          >
+            {success}
+          </motion.div>
+        )}
+
         {/* Error Message */}
         {error && (
           <motion.div
@@ -114,6 +180,94 @@ export default function AccountsPage() {
             ⚠️ {error}
           </motion.div>
         )}
+
+        {/* Facebook Connection Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <CyberCard className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-cyber-primary font-mono mb-2">
+                  FACEBOOK INTEGRATION
+                </h2>
+                <p className="text-sm text-cyber-text/60">
+                  Connect your Facebook account to access pages and Instagram Business accounts
+                </p>
+              </div>
+              <CyberButton
+                onClick={handleConnectFacebook}
+                variant="primary"
+                size="md"
+              >
+                🔗 Connect Facebook
+              </CyberButton>
+            </div>
+
+            {/* Facebook Pages List */}
+            {facebookPages.length > 0 && (
+              <div className="mt-6 space-y-3">
+                <h3 className="text-sm font-semibold text-cyber-primary font-mono">
+                  YOUR FACEBOOK PAGES ({facebookPages.length})
+                </h3>
+                <div className="grid gap-3">
+                  {facebookPages.map((page) => (
+                    <motion.div
+                      key={page.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="p-4 bg-cyber-dark/50 border border-cyber-primary/20 rounded-lg hover:border-cyber-primary/40 transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {page.instagram_account?.profile_picture_url && (
+                            <img
+                              src={page.instagram_account.profile_picture_url}
+                              alt={page.name}
+                              className="w-10 h-10 rounded-full border border-cyber-primary/30"
+                            />
+                          )}
+                          <div>
+                            <p className="font-semibold text-cyber-text">{page.name}</p>
+                            {page.instagram_account && (
+                              <p className="text-xs text-cyber-primary font-mono">
+                                @{page.instagram_account.username}
+                              </p>
+                            )}
+                            {!page.instagram_account && (
+                              <p className="text-xs text-yellow-400">
+                                No Instagram Business Account linked
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-400">
+                            ✓ CONNECTED
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+                
+                {/* Permission explanation */}
+                <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-xs text-blue-300 font-mono">
+                    <strong>Why we need these permissions:</strong><br/>
+                    • <strong>pages_show_list</strong>: Display your Facebook pages<br/>
+                    • <strong>pages_read_engagement</strong>: View page engagement metrics<br/>
+                    • <strong>pages_messaging</strong>: Send and receive messages on behalf of your pages<br/>
+                    • <strong>instagram_manage_messages</strong>: Automate Instagram DM responses<br/>
+                    • <strong>instagram_manage_comments</strong>: Automate Instagram comment replies
+                  </p>
+                </div>
+              </div>
+            )}
+          </CyberCard>
+        </motion.div>
 
         {/* Connect New */}
         {!connecting && (

@@ -424,29 +424,63 @@ router.get('/instagram/callback', authenticate, async (req, res) => {
  */
 const FACEBOOK_CLIENT_ID = process.env.FACEBOOK_CLIENT_ID;
 const FACEBOOK_CLIENT_SECRET = process.env.FACEBOOK_CLIENT_SECRET;
-const FACEBOOK_REDIRECT_URI = process.env.FACEBOOK_REDIRECT_URI;
+const FACEBOOK_REDIRECT_URI = process.env.FACEBOOK_REDIRECT_URI || process.env.FACEBOOK_CALLBACK_URL;
 
 /**
  * Facebook OAuth: Redirect to Meta login
+ * Includes permissions required for Meta App Review:
+ * - pages_show_list: Display user's Facebook pages
+ * - pages_read_engagement: Read page engagement metrics
+ * - pages_manage_metadata: Manage page information
+ * - pages_messaging: Send and receive messages on behalf of pages
  */
 router.get('/facebook', (req, res) => {
-  const fbAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(FACEBOOK_REDIRECT_URI)}&scope=email,public_profile`;
+  if (!FACEBOOK_CLIENT_ID || !FACEBOOK_CLIENT_SECRET) {
+    logger.error('[Facebook OAuth] Missing credentials in environment variables');
+    return res.status(503).json({ 
+      error: 'Facebook OAuth not configured. Please add FACEBOOK_CLIENT_ID and FACEBOOK_CLIENT_SECRET to .env file.' 
+    });
+  }
+  
+  // Use v19.0 for latest API and include all permissions needed for Meta approval
+  const scopes = [
+    'email',
+    'public_profile',
+    'pages_show_list',
+    'pages_read_engagement',
+    'pages_manage_metadata',
+    'pages_messaging',
+    'instagram_basic',
+    'instagram_manage_messages',
+    'instagram_manage_comments'
+  ].join(',');
+  
+  const fbAuthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(FACEBOOK_REDIRECT_URI)}&scope=${scopes}&response_type=code`;
   logger.info(`[Facebook OAuth] Redirecting to: ${fbAuthUrl}`);
   res.redirect(fbAuthUrl);
 });
 
 /**
  * Facebook OAuth: Callback handler
+ * Exchanges authorization code for access token and fetches user's Facebook pages
  */
 router.get('/facebook/callback', async (req, res) => {
-  const { code } = req.query;
+  const { code, error, error_description } = req.query;
+  
+  if (error) {
+    logger.warn('[Facebook OAuth] User denied permission or error occurred:', error_description);
+    return res.redirect(`http://localhost:3000/dashboard/accounts?error=${encodeURIComponent(error_description || 'Facebook login cancelled')}`);
+  }
+  
   if (!code) {
     logger.warn('[Facebook OAuth] No code provided in callback');
-    return res.status(400).json({ error: 'No code provided' });
+    return res.redirect('http://localhost:3000/dashboard/accounts?error=No authorization code received');
   }
+  
   try {
     // Exchange code for access_token
-    const tokenRes = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+    logger.info('[Facebook OAuth] Exchanging code for access token...');
+    const tokenRes = await axios.get('https://graph.facebook.com/v19.0/oauth/access_token', {
       params: {
         client_id: FACEBOOK_CLIENT_ID,
         client_secret: FACEBOOK_CLIENT_SECRET,
@@ -454,11 +488,48 @@ router.get('/facebook/callback', async (req, res) => {
         code,
       },
     });
+    
     const { access_token } = tokenRes.data;
     logger.info('[Facebook OAuth] Access token received');
 
-    // Store token in JWT (or session cookie)
-    const token = jwt.sign({ access_token, provider: 'facebook' }, config.jwtSecret, { expiresIn: config.jwtExpiry });
+    // Fetch user profile
+    const userRes = await axios.get('https://graph.facebook.com/v19.0/me', {
+      params: {
+        access_token,
+        fields: 'id,name,email'
+      }
+    });
+    
+    const userProfile = userRes.data;
+    logger.info('[Facebook OAuth] User profile fetched:', userProfile.name);
+
+    // Fetch user's Facebook Pages
+    const pagesRes = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
+      params: {
+        access_token,
+        fields: 'id,name,access_token,tasks,instagram_business_account{id,username,profile_picture_url}'
+      }
+    });
+    
+    const pages = pagesRes.data.data || [];
+    logger.info(`[Facebook OAuth] Fetched ${pages.length} Facebook page(s)`);
+
+    // Store token and user data in JWT
+    const tokenData = {
+      access_token,
+      provider: 'facebook',
+      userId: userProfile.id,
+      userName: userProfile.name,
+      email: userProfile.email,
+      pages: pages.map(page => ({
+        id: page.id,
+        name: page.name,
+        access_token: page.access_token,
+        instagram_account: page.instagram_business_account || null
+      }))
+    };
+    
+    const token = jwt.sign(tokenData, config.jwtSecret, { expiresIn: config.jwtExpiry });
     const decodedToken = jwt.decode(token) || {};
     const tokenExpiresAt = decodedToken.exp ? new Date(decodedToken.exp * 1000) : null;
 
@@ -471,17 +542,69 @@ router.get('/facebook/callback', async (req, res) => {
         maxAge: tokenExpiresAt ? tokenExpiresAt.getTime() - Date.now() : undefined,
         path: '/',
       };
-      res.cookie('token', token, cookieOptions);
+      res.cookie('fb_token', token, cookieOptions);
       logger.info('[Facebook OAuth] Set session cookie (httpOnly, SameSite=lax)');
     } catch (cookieErr) {
       logger.warn('[Facebook OAuth] Failed to set session cookie', { error: cookieErr.message });
     }
 
-    // Redirect to frontend with success (customize as needed)
-    return res.redirect(`/dashboard/accounts?fb_oauth=success`);
+    // Redirect to frontend with success and pages count
+    return res.redirect(`http://localhost:3000/dashboard/accounts?fb_oauth=success&pages=${pages.length}&user=${encodeURIComponent(userProfile.name)}`);
   } catch (err) {
     logger.error('[Facebook OAuth] Token exchange failed:', err.message);
-    return res.redirect(`/dashboard/accounts?error=${encodeURIComponent('Facebook login failed')}`);
+    if (err.response?.data) {
+      logger.error('[Facebook OAuth] Error details:', err.response.data);
+    }
+    return res.redirect(`http://localhost:3000/dashboard/accounts?error=${encodeURIComponent('Facebook login failed: ' + err.message)}`);
+  }
+});
+
+/**
+ * Get Facebook Pages from stored token
+ * Returns the pages that were fetched during OAuth
+ */
+router.get('/facebook/pages', (req, res) => {
+  try {
+    // Try to get token from cookie or Authorization header
+    let token = req.cookies?.fb_token;
+    
+    if (!token && req.headers.authorization) {
+      token = req.headers.authorization.replace('Bearer ', '');
+    }
+    
+    if (!token) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Not authenticated with Facebook' 
+      });
+    }
+    
+    // Verify and decode JWT
+    const decoded = jwt.verify(token, config.jwtSecret);
+    
+    if (decoded.provider !== 'facebook') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid token provider' 
+      });
+    }
+    
+    // Return pages data
+    return res.json({
+      success: true,
+      pages: decoded.pages || [],
+      user: {
+        id: decoded.userId,
+        name: decoded.userName,
+        email: decoded.email
+      }
+    });
+  } catch (err) {
+    logger.error('[Facebook Pages] Failed to fetch pages:', err.message);
+    return res.status(401).json({ 
+      success: false, 
+      error: 'Invalid or expired token' 
+    });
   }
 });
 

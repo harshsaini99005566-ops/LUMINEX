@@ -117,9 +117,9 @@ const startServer = async () => {
     });
   });
 
-  // Root endpoint - Homepage
+  // Root endpoint - Homepage (Meta verification checks this)
   app.get("/", (req, res) => {
-    res.send("<h1>LUMINEX Home</h1><p>Instagram Automation Platform</p>");
+    res.status(200).send("LUMINEX is running");
   });
 
   // Privacy Policy endpoint
