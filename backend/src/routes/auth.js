@@ -435,11 +435,20 @@ const FACEBOOK_REDIRECT_URI = process.env.FACEBOOK_REDIRECT_URI || process.env.F
  * - pages_messaging: Send and receive messages on behalf of pages
  */
 router.get('/facebook', (req, res) => {
-  if (!FACEBOOK_CLIENT_ID || !FACEBOOK_CLIENT_SECRET) {
-    logger.error('[Facebook OAuth] Missing credentials in environment variables');
-    return res.status(503).json({ 
-      error: 'Facebook OAuth not configured. Please add FACEBOOK_CLIENT_ID and FACEBOOK_CLIENT_SECRET to .env file.' 
-    });
+  const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+  
+  // Check if credentials exist and are not placeholders
+  const hasValidCredentials = FACEBOOK_CLIENT_ID && 
+                              FACEBOOK_CLIENT_SECRET && 
+                              !FACEBOOK_CLIENT_ID.includes('YOUR') && 
+                              !FACEBOOK_CLIENT_ID.includes('HERE') &&
+                              !FACEBOOK_CLIENT_SECRET.includes('YOUR') &&
+                              !FACEBOOK_CLIENT_SECRET.includes('HERE') &&
+                              FACEBOOK_CLIENT_ID.length > 10;
+  
+  if (!hasValidCredentials) {
+    logger.error('[Facebook OAuth] Missing or invalid credentials in environment variables');
+    return res.redirect(`${FRONTEND_URL}/login?error=${encodeURIComponent('Facebook login is not configured. Please add valid Facebook App credentials.')}`);
   }
   
   // Use v19.0 for latest API and include all permissions needed for Meta approval

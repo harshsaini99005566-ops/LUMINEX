@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { authAPI } from '../../lib/api'
@@ -15,6 +15,17 @@ export default function LoginPage() {
   const [error, setError] = useState('')
 
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Check for error messages from OAuth redirects
+  useEffect(() => {
+    const errorParam = searchParams.get('error')
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam))
+      // Clean up URL
+      window.history.replaceState({}, '', '/login')
+    }
+  }, [searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
