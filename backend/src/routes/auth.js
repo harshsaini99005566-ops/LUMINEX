@@ -466,15 +466,16 @@ router.get('/facebook', (req, res) => {
  */
 router.get('/facebook/callback', async (req, res) => {
   const { code, error, error_description } = req.query;
+  const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
   
   if (error) {
     logger.warn('[Facebook OAuth] User denied permission or error occurred:', error_description);
-    return res.redirect(`http://localhost:3000/dashboard/accounts?error=${encodeURIComponent(error_description || 'Facebook login cancelled')}`);
+    return res.redirect(`${FRONTEND_URL}/dashboard/accounts?error=${encodeURIComponent(error_description || 'Facebook login cancelled')}`);
   }
   
   if (!code) {
     logger.warn('[Facebook OAuth] No code provided in callback');
-    return res.redirect('http://localhost:3000/dashboard/accounts?error=No authorization code received');
+    return res.redirect(`${FRONTEND_URL}/dashboard/accounts?error=No authorization code received`);
   }
   
   try {
@@ -549,13 +550,15 @@ router.get('/facebook/callback', async (req, res) => {
     }
 
     // Redirect to frontend with success and pages count
-    return res.redirect(`http://localhost:3000/dashboard/accounts?fb_oauth=success&pages=${pages.length}&user=${encodeURIComponent(userProfile.name)}`);
+    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    return res.redirect(`${FRONTEND_URL}/dashboard/accounts?fb_oauth=success&pages=${pages.length}&user=${encodeURIComponent(userProfile.name)}`);
   } catch (err) {
     logger.error('[Facebook OAuth] Token exchange failed:', err.message);
     if (err.response?.data) {
       logger.error('[Facebook OAuth] Error details:', err.response.data);
     }
-    return res.redirect(`http://localhost:3000/dashboard/accounts?error=${encodeURIComponent('Facebook login failed: ' + err.message)}`);
+    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    return res.redirect(`${FRONTEND_URL}/dashboard/accounts?error=${encodeURIComponent('Facebook login failed: ' + err.message)}`);
   }
 });
 
