@@ -153,7 +153,7 @@ const startServer = async () => {
   });
 
   // Facebook OAuth routes (direct routes, no /api prefix) - only if credentials are available
-  if (process.env.FB_APP_ID && process.env.FB_APP_SECRET) {
+  if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
     app.get(
       "/auth/facebook",
       require("passport").authenticate("facebook", { scope: ["email"] }),

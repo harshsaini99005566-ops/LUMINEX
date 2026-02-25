@@ -2,7 +2,7 @@ const passport = require("passport");
 const FacebookStrategy = require("passport-facebook").Strategy;
 
 // Check if Facebook credentials are available
-if (!process.env.FB_APP_ID || !process.env.FB_APP_SECRET) {
+if (!process.env.FACEBOOK_APP_ID || !process.env.FACEBOOK_APP_SECRET) {
   console.warn(
     "Facebook OAuth credentials not found. Facebook login will not be available.",
   );
@@ -10,10 +10,10 @@ if (!process.env.FB_APP_ID || !process.env.FB_APP_SECRET) {
   passport.use(
     new FacebookStrategy(
       {
-        clientID: process.env.FB_APP_ID,
-        clientSecret: process.env.FB_APP_SECRET,
-        callbackURL: process.env.FACEBOOK_CALLBACK_URL,
-        profileFields: ["id", "displayName", "emails"],
+        clientID: process.env.FACEBOOK_APP_ID,
+        clientSecret: process.env.FACEBOOK_APP_SECRET,
+        callbackURL: "https://luminex-bwjm.onrender.com/api/auth/facebook/callback",
+        profileFields: ["id", "emails", "name"],
       },
       function (accessToken, refreshToken, profile, done) {
         return done(null, profile);
