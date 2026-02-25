@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   BarChart3,
   Users,
@@ -32,8 +33,28 @@ interface User {
 }
 
 export default function Dashboard() {
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fbAuthSuccess, setFbAuthSuccess] = useState(false);
+
+  useEffect(() => {
+    // Check for Facebook OAuth callback
+    const fbauth = searchParams.get('fbauth');
+    const token = searchParams.get('token');
+    const fbUser = searchParams.get('user');
+    
+    if (fbauth === 'success' && token) {
+      // Store token from Facebook OAuth
+      localStorage.setItem('token', token);
+      setFbAuthSuccess(true);
+      
+      // Clear URL params
+      window.history.replaceState({}, '', '/dashboard');
+      
+      console.log(`✅ Facebook login successful! Welcome ${fbUser || 'User'}`);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -60,7 +81,7 @@ export default function Dashboard() {
     };
 
     fetchUser();
-  }, []);
+  }, [fbAuthSuccess]); // Re-fetch user when FB auth completes
 
   if (loading) {
     return (

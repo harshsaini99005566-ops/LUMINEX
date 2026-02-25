@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false, // Not required for OAuth users
       minlength: 8,
       select: false,
     },
@@ -27,6 +27,25 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String,
       default: null,
+    },
+    // Facebook OAuth fields
+    facebookId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow null values
+    },
+    facebookAccessToken: {
+      type: String,
+      select: false, // Don't include in queries by default
+    },
+    facebookPages: [{
+      pageId: String,
+      pageName: String,
+      hasInstagram: Boolean,
+    }],
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
     },
     plan: {
       type: String,
@@ -73,7 +92,8 @@ userSchema.virtual('fullName').get(function () {
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  // Skip if password is not modified or doesn't exist (OAuth users)
+  if (!this.isModified('password') || !this.password) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);

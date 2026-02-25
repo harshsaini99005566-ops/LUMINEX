@@ -470,12 +470,12 @@ router.get('/facebook/callback', async (req, res) => {
   
   if (error) {
     logger.warn('[Facebook OAuth] User denied permission or error occurred:', error_description);
-    return res.redirect(`${FRONTEND_URL}/dashboard/accounts?error=${encodeURIComponent(error_description || 'Facebook login cancelled')}`);
+    return res.redirect(`${FRONTEND_URL}/login?error=${encodeURIComponent(error_description || 'Facebook login cancelled')}`);
   }
   
   if (!code) {
     logger.warn('[Facebook OAuth] No code provided in callback');
-    return res.redirect(`${FRONTEND_URL}/dashboard/accounts?error=No authorization code received`);
+    return res.redirect(`${FRONTEND_URL}/login?error=No authorization code received`);
   }
   
   try {
@@ -497,40 +497,82 @@ router.get('/facebook/callback', async (req, res) => {
     const userRes = await axios.get('https://graph.facebook.com/v19.0/me', {
       params: {
         access_token,
-        fields: 'id,name,email'
+        fields: 'id,name,email,first_name,last_name'
       }
     });
     
     const userProfile = userRes.data;
     logger.info('[Facebook OAuth] User profile fetched:', userProfile.name);
 
-    // Fetch user's Facebook Pages
-    const pagesRes = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
-      params: {
-        access_token,
-        fields: 'id,name,access_token,tasks,instagram_business_account{id,username,profile_picture_url}'
-      }
+    // Find or create user in our database
+    let user = await User.findOne({ 
+      $or: [
+        { facebookId: userProfile.id },
+        { email: userProfile.email }
+      ]
     });
-    
-    const pages = pagesRes.data.data || [];
-    logger.info(`[Facebook OAuth] Fetched ${pages.length} Facebook page(s)`);
 
-    // Store token and user data in JWT
-    const tokenData = {
-      access_token,
-      provider: 'facebook',
-      userId: userProfile.id,
-      userName: userProfile.name,
-      email: userProfile.email,
-      pages: pages.map(page => ({
-        id: page.id,
-        name: page.name,
-        access_token: page.access_token,
-        instagram_account: page.instagram_business_account || null
-      }))
-    };
-    
-    const token = jwt.sign(tokenData, config.jwtSecret, { expiresIn: config.jwtExpiry });
+    if (!user) {
+      // Create new user from Facebook profile
+      logger.info('[Facebook OAuth] Creating new user from Facebook profile');
+      user = new User({
+        email: userProfile.email || `fb_${userProfile.id}@facebook.com`,
+        firstName: userProfile.first_name || userProfile.name?.split(' ')[0] || 'User',
+        lastName: userProfile.last_name || userProfile.name?.split(' ').slice(1).join(' ') || '',
+        facebookId: userProfile.id,
+        facebookAccessToken: access_token,
+        plan: 'free',
+        isEmailVerified: true, // Facebook emails are verified
+      });
+      await user.save();
+
+      // Create subscription
+      const subscription = new Subscription({
+        user: user._id,
+        plan: 'free',
+        status: 'active',
+      });
+      await subscription.save();
+      
+      logger.info('[Facebook OAuth] New user created:', user.email);
+    } else {
+      // Update existing user
+      logger.info('[Facebook OAuth] User already exists, updating Facebook info');
+      user.facebookId = userProfile.id;
+      user.facebookAccessToken = access_token;
+      user.lastLogin = new Date();
+      await user.save();
+    }
+
+    // Fetch user's Facebook Pages (optional, for future use)
+    try {
+      const pagesRes = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
+        params: {
+          access_token,
+          fields: 'id,name,access_token,tasks,instagram_business_account{id,username,profile_picture_url}'
+        }
+      });
+      const pages = pagesRes.data.data || [];
+      logger.info(`[Facebook OAuth] User has ${pages.length} Facebook page(s)`);
+      
+      // Store pages info in user document for future reference
+      user.facebookPages = pages.map(page => ({
+        pageId: page.id,
+        pageName: page.name,
+        hasInstagram: !!page.instagram_business_account,
+      }));
+      await user.save();
+    } catch (pagesErr) {
+      logger.warn('[Facebook OAuth] Could not fetch pages:', pagesErr.message);
+    }
+
+    // Generate JWT token for authentication (same format as regular login)
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiry }
+    );
+
     const decodedToken = jwt.decode(token) || {};
     const tokenExpiresAt = decodedToken.exp ? new Date(decodedToken.exp * 1000) : null;
 
@@ -543,15 +585,15 @@ router.get('/facebook/callback', async (req, res) => {
         maxAge: tokenExpiresAt ? tokenExpiresAt.getTime() - Date.now() : undefined,
         path: '/',
       };
-      res.cookie('fb_token', token, cookieOptions);
-      logger.info('[Facebook OAuth] Set session cookie (httpOnly, SameSite=lax)');
+      res.cookie('token', token, cookieOptions);
+      logger.info('[Facebook OAuth] Set authentication cookie (httpOnly, SameSite=lax)');
     } catch (cookieErr) {
       logger.warn('[Facebook OAuth] Failed to set session cookie', { error: cookieErr.message });
     }
 
-    // Redirect to frontend with success and pages count
-    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-    return res.redirect(`${FRONTEND_URL}/dashboard/accounts?fb_oauth=success&pages=${pages.length}&user=${encodeURIComponent(userProfile.name)}`);
+    // Redirect to dashboard with token in URL (for localStorage backup)
+    logger.info('[Facebook OAuth] Login successful, redirecting to dashboard');
+    return res.redirect(`${FRONTEND_URL}/dashboard?fbauth=success&token=${encodeURIComponent(token)}&user=${encodeURIComponent(user.firstName)}`);
   } catch (err) {
     logger.error('[Facebook OAuth] Token exchange failed:', err.message);
     if (err.response?.data) {
