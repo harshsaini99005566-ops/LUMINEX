@@ -43,6 +43,11 @@ const userSchema = new mongoose.Schema(
       pageName: String,
       hasInstagram: Boolean,
     }],
+    authProvider: {
+      type: String,
+      enum: ['local', 'facebook', 'google'],
+      default: 'local'
+    },
     isEmailVerified: {
       type: Boolean,
       default: false,

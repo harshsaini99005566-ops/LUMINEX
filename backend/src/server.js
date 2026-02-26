@@ -5,8 +5,9 @@ const compression = require("compression");
 const session = require("express-session");
 const dotenv = require("dotenv");
 const path = require("path");
-dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 console.log("IG APP ID:", process.env.INSTAGRAM_APP_ID);
+console.log("FB Client ID:", process.env.FACEBOOK_CLIENT_ID);
 
 const { connectDB, getDBStatus } = require("../config/database");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
@@ -42,6 +43,10 @@ const startServer = async () => {
 
   // Step 2: Create Express app
   const app = express();
+
+  // Trust proxy - CRITICAL for Render/HTTPS deployment
+  // Without this, sessions won't work behind a proxy
+  app.set('trust proxy', 1);
 
   // Step 3: Security and compression middleware (before routes)
   // Apply security headers using helmet
@@ -82,6 +87,35 @@ const startServer = async () => {
   app.use(validateRequest);
   app.use(sanitizeInput);
   app.use(requestLogger);
+
+  // Step 5.5: Session and Passport Configuration
+  // CRITICAL: This must come AFTER body parsing and BEFORE routes
+  const passport = require('passport');
+  const { MongoStore } = require('connect-mongo');
+  
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'fallback-secret-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      ttl: 7 * 24 * 60 * 60, // 7 days
+    }),
+    cookie: {
+      secure: process.env.NODE_ENV === 'production', // true in production (HTTPS only)
+      httpOnly: true, // Prevents XSS attacks
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-site OAuth in production
+      domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+    },
+    proxy: true // Trust the reverse proxy
+  }));
+
+  // Initialize Passport
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  logger.info('✅ Session and Passport middleware initialized');
 
   // Step 6: Setup routes
 
@@ -153,19 +187,37 @@ const startServer = async () => {
   });
 
   // Facebook OAuth routes (direct routes, no /api prefix) - only if credentials are available
-  if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+  if (process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET) {
     app.get(
       "/auth/facebook",
-      require("passport").authenticate("facebook", { scope: ["email"] }),
+      passport.authenticate("facebook", { scope: ["email"] }),
     );
 
     app.get(
       "/auth/facebook/callback",
-      require("passport").authenticate("facebook", {
-        failureRedirect: "/login",
+      passport.authenticate("facebook", {
+        failureRedirect: process.env.FRONTEND_URL + "/login?error=facebook_auth_failed",
       }),
       (req, res) => {
-        res.send("Facebook Login Success");
+        // Successful authentication
+        // Generate JWT token for the authenticated user
+        const jwt = require('jsonwebtoken');
+        const token = jwt.sign(
+          { id: req.user._id, email: req.user.email },
+          config.jwtSecret,
+          { expiresIn: config.jwtExpiry }
+        );
+
+        // Set the token as a cookie
+        res.cookie('token', token, {
+          httpOnly: true,
+          secure: config.nodeEnv === 'production',
+          sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        // Redirect to frontend dashboard
+        res.redirect(process.env.FRONTEND_URL + "/dashboard");
       },
     );
   } else {
