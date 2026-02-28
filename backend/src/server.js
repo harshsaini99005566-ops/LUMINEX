@@ -230,6 +230,29 @@ const startServer = async () => {
     });
   }
 
+  // Test route to check if user session is working
+  app.get("/check", (req, res) => {
+    if (req.user) {
+      res.json({
+        authenticated: true,
+        user: {
+          id: req.user._id,
+          email: req.user.email,
+          firstName: req.user.firstName,
+          lastName: req.user.lastName,
+          plan: req.user.plan
+        },
+        message: "✅ Session working - User authenticated"
+      });
+    } else {
+      res.json({
+        authenticated: false,
+        user: null,
+        message: "❌ Session not saved - User not authenticated"
+      });
+    }
+  });
+
   // API Routes with /api prefix (apply rate limiting)
   try {
     // Auth routes (stricter rate limiting)
