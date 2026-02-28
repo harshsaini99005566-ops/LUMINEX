@@ -553,7 +553,7 @@ router.get('/facebook/callback', async (req, res) => {
       await user.save();
     }
 
-    // Fetch user's Facebook Pages (optional, for future use)
+    // Fetch user's Facebook Pages (with full details including Instagram accounts)
     try {
       const pagesRes = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
         params: {
@@ -564,11 +564,12 @@ router.get('/facebook/callback', async (req, res) => {
       const pages = pagesRes.data.data || [];
       logger.info(`[Facebook OAuth] User has ${pages.length} Facebook page(s)`);
       
-      // Store pages info in user document for future reference
+      // Store full pages info in user document for display in frontend
       user.facebookPages = pages.map(page => ({
-        pageId: page.id,
-        pageName: page.name,
-        hasInstagram: !!page.instagram_business_account,
+        id: page.id,
+        name: page.name,
+        access_token: page.access_token,
+        instagram_account: page.instagram_business_account || null,
       }));
       await user.save();
     } catch (pagesErr) {
@@ -614,50 +615,46 @@ router.get('/facebook/callback', async (req, res) => {
 });
 
 /**
- * Get Facebook Pages from stored token
- * Returns the pages that were fetched during OAuth
+ * Get Facebook Pages from user's stored data
+ * Returns the pages that were fetched during OAuth and stored in the user document
  */
-router.get('/facebook/pages', (req, res) => {
+router.get('/facebook/pages', authenticate, async (req, res) => {
   try {
-    // Try to get token from cookie or Authorization header
-    let token = req.cookies?.fb_token;
+    const userId = req.userId;
     
-    if (!token && req.headers.authorization) {
-      token = req.headers.authorization.replace('Bearer ', '');
-    }
+    // Fetch user with Facebook pages data
+    const user = await User.findById(userId).select('facebookPages facebookAccessToken firstName lastName email');
     
-    if (!token) {
-      return res.status(401).json({ 
+    if (!user) {
+      return res.status(404).json({ 
         success: false, 
-        error: 'Not authenticated with Facebook' 
+        error: 'User not found' 
       });
     }
     
-    // Verify and decode JWT
-    const decoded = jwt.verify(token, config.jwtSecret);
-    
-    if (decoded.provider !== 'facebook') {
-      return res.status(400).json({ 
+    if (!user.facebookAccessToken) {
+      return res.status(404).json({ 
         success: false, 
-        error: 'Invalid token provider' 
+        error: 'No Facebook account connected. Please connect Facebook first.',
+        pages: []
       });
     }
     
-    // Return pages data
+    // Return pages data from user document
     return res.json({
       success: true,
-      pages: decoded.pages || [],
+      pages: user.facebookPages || [],
       user: {
-        id: decoded.userId,
-        name: decoded.userName,
-        email: decoded.email
+        id: user._id,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email
       }
     });
   } catch (err) {
     logger.error('[Facebook Pages] Failed to fetch pages:', err.message);
-    return res.status(401).json({ 
+    return res.status(500).json({ 
       success: false, 
-      error: 'Invalid or expired token' 
+      error: 'Failed to fetch Facebook pages' 
     });
   }
 });
