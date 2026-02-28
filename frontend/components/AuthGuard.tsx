@@ -4,6 +4,7 @@ import { useEffect, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { authAPI } from "../lib/api";
+import { useAuthStore } from "../lib/store";
 
 export default function AuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -15,6 +16,39 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
 
     const verifyAuth = async () => {
       try {
+        const params = new URLSearchParams(window.location.search);
+        const fbauth = params.get("fbauth");
+        const callbackToken = params.get("token");
+
+        if (fbauth === "success" && callbackToken) {
+          console.log("[AuthGuard] OAuth callback detected, priming token before verification");
+          localStorage.setItem("token", callbackToken);
+          useAuthStore.getState().login(
+            {
+              id: "",
+              email: "",
+              firstName: "User",
+              lastName: "",
+              plan: "free",
+              createdAt: new Date().toISOString(),
+              usage: {
+                accountsUsed: 0,
+                messagesThisMonth: 0,
+                rulesUsed: 0,
+                aiRepliesUsed: 0,
+                lastResetDate: new Date().toISOString(),
+              },
+              limits: {
+                instagramAccounts: 0,
+                automationRules: 0,
+                aiReplies: 0,
+                monthlyMessages: 0,
+              },
+            },
+            callbackToken
+          );
+        }
+
         console.log("[AuthGuard] Verifying authentication...");
         await authAPI.me();
         console.log("[AuthGuard] Authentication successful");
@@ -23,13 +57,24 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
           setVerified(true);
           setLoading(false);
         }
-      } catch (error) {
-        console.error("[AuthGuard] Authentication failed:", error);
-        console.log("[AuthGuard] Redirecting to login");
+      } catch (error: any) {
+        console.error("[AuthGuard] Authentication failed:", error?.response?.status, error?.message);
 
         if (isMounted) {
+          const params = new URLSearchParams(window.location.search);
+          const fbauth = params.get("fbauth");
+          const callbackToken = params.get("token");
+
+          if (fbauth === "success" && callbackToken) {
+            console.warn("[AuthGuard] OAuth callback present, allowing dashboard to finalize auth");
+            setVerified(true);
+            setLoading(false);
+            return;
+          }
+
           localStorage.removeItem("token");
           localStorage.removeItem("user");
+          useAuthStore.getState().logout();
           setLoading(false);
           router.push("/login");
         }
