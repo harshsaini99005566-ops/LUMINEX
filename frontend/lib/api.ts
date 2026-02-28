@@ -17,24 +17,31 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // include cookies for auth
+  withCredentials: true, // include cookies for cross-origin auth
+  timeout: 15000, // 15 second timeout
 });
 
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
-    // First try to get token from Zustand store
+    // Get token from Zustand store first (has priority for fresh logins)
     let { token } = useAuthStore.getState();
     
-    // If not in store, try localStorage (for when page loads)
+    // If not in store, try localStorage (fallback for page reloads)
     if (!token && typeof window !== 'undefined') {
       token = localStorage.getItem('token');
+      if (token && !useAuthStore.getState().token) {
+        console.log(`[API] Found token in localStorage for ${config.url}`);
+      }
     }
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log(`[API] Interceptor adding token to ${config.method?.toUpperCase()} ${config.url}`);
+      console.log(`[API] ${config.method?.toUpperCase()} ${config.url} - Token added`);
+    } else {
+      console.log(`[API] ${config.method?.toUpperCase()} ${config.url} - No token`);
     }
+    
     return config;
   },
   (error) => Promise.reject(error)

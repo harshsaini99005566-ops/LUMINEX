@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { authAPI } from "../../lib/api";
+import { useAuthStore } from "../../lib/store";
 
 interface User {
   id: string;
@@ -37,6 +38,7 @@ export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [fbAuthSuccess, setFbAuthSuccess] = useState(false);
+  const { login } = useAuthStore();
 
   useEffect(() => {
     // Check for Facebook OAuth callback
@@ -45,43 +47,78 @@ export default function Dashboard() {
     const fbUser = searchParams.get('user');
     
     if (fbauth === 'success' && token) {
-      // Store token from Facebook OAuth
+      console.log(`[OAuth] Received token from backend, storing in auth store...`);
+      
+      // Store token in localStorage for persistence
       localStorage.setItem('token', token);
+      
+      // CRITICAL: Update Zustand auth store immediately so API interceptor can find the token
+      // This ensures all subsequent API requests have the Authorization header
+      login({ 
+        id: '', 
+        email: '', 
+        firstName: fbUser || 'User',
+        lastName: '',
+        plan: 'free',
+        usage: { messagesThisMonth: 0, rulesUsed: 0, aiRepliesUsed: 0 },
+        limits: { automationRules: 0, aiReplies: 0 }
+      }, token);
+      
       setFbAuthSuccess(true);
       
       // Clear URL params
       window.history.replaceState({}, '', '/dashboard');
       
-      console.log(`✅ Facebook login successful! Welcome ${fbUser || 'User'}`);
+      console.log(`✅ Facebook OAuth complete! Token stored. Welcome ${fbUser || 'User'}`);
     }
-  }, [searchParams]);
+  }, [searchParams, login]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
 
     if (!token) {
+      console.warn('[Dashboard] No token found, redirecting to login');
+      setLoading(false);
       window.location.href = "/login";
       return;
     }
 
     const fetchUser = async () => {
       try {
+        console.log('[Dashboard] Fetching user data with token...');
         const data = await authAPI.me();
+        console.log('[Dashboard] User data fetched successfully:', data);
+        
         if (data && data.user) {
           setUser(data.user);
+          
+          // Update Zustand auth store with complete user data
+          login(data.user, token);
         } else {
-          throw new Error("Failed to fetch user data");
+          throw new Error("Server returned no user data");
         }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        window.location.href = "/login";
+      } catch (error: any) {
+        console.error('[Dashboard] Error fetching user:', error.response?.status, error.message);
+        
+        // Check if it's an auth error
+        if (error.response?.status === 401) {
+          console.error('[Dashboard] Token invalid or expired, clearing session');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          useAuthStore.getState().logout();
+        }
+        
+        // Redirect to login
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 500);
       } finally {
         setLoading(false);
       }
     };
 
     fetchUser();
-  }, [fbAuthSuccess]); // Re-fetch user when FB auth completes
+  }, [fbAuthSuccess, login]); // Re-fetch user when FB auth completes
 
   if (loading) {
     return (
