@@ -3,12 +3,13 @@ const logger = require('../../utils/logger');
 const { config } = require('../config/env');
 
 const authenticate = (req, res, next) => {
+  let token = null; // Declare outside try block so it's accessible in catch
   try {
     const authHeader = req.headers.authorization;
     logger.debug('[Auth Middleware] Authorization header present:', !!authHeader);
 
     // Prefer Authorization header; fallback to cookie named 'token'
-    let token = authHeader?.split(' ')[1];
+    token = authHeader?.split(' ')[1];
 
     if (!token && req.headers.cookie) {
       // Parse cookies manually (no cookie-parser dependency required)
@@ -33,7 +34,11 @@ const authenticate = (req, res, next) => {
     });
 
     // Verify token using configured secret
-    const decoded = jwt.verify(token, config.jwtSecret || process.env.JWT_SECRET);
+    const jwtSecret = config.jwtSecret || process.env.JWT_SECRET;
+    logger.debug('[Auth Middleware] Verifying with secret length:', jwtSecret?.length);
+    logger.debug('[Auth Middleware] Token to verify (first 50 chars):', token.substring(0, 50));
+    
+    const decoded = jwt.verify(token, jwtSecret);
     logger.info('[Auth Middleware] Token verified for user', { userId: decoded.id });
     req.user = decoded;
     next();
@@ -43,7 +48,11 @@ const authenticate = (req, res, next) => {
       return res.status(401).json({ error: 'Token expired' });
     }
 
-    logger.error('[Auth Middleware] Token verification failed', { error: error.message });
+    logger.error('[Auth Middleware] Token verification failed', { 
+      error: error.message,
+      tokenPreview: token?.substring(0, 50),
+      secretLength: (config.jwtSecret || process.env.JWT_SECRET)?.length
+    });
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 };
