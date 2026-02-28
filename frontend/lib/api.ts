@@ -73,6 +73,7 @@ apiClient.interceptors.response.use(
           {
             headers: {
               Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
             },
             withCredentials: true, // ensure cookies are sent during refresh
           }

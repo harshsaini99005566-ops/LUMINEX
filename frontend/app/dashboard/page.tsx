@@ -37,7 +37,6 @@ export default function Dashboard() {
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [fbAuthSuccess, setFbAuthSuccess] = useState(false);
   const { login } = useAuthStore();
 
   useEffect(() => {
@@ -46,34 +45,79 @@ export default function Dashboard() {
     const token = searchParams.get('token');
     const fbUser = searchParams.get('user');
     
-    if (fbauth === 'success' && token) {
-      console.log(`[OAuth] Received token from backend, storing in auth store...`);
-      
-      // Store token in localStorage for persistence
-      localStorage.setItem('token', token);
-      
-      // CRITICAL: Update Zustand auth store immediately so API interceptor can find the token
-      // This ensures all subsequent API requests have the Authorization header
-      login({ 
-        id: '', 
-        email: '', 
-        firstName: fbUser || 'User',
-        lastName: '',
-        plan: 'free',
-        usage: { messagesThisMonth: 0, rulesUsed: 0, aiRepliesUsed: 0 },
-        limits: { automationRules: 0, aiReplies: 0 }
-      }, token);
-      
-      setFbAuthSuccess(true);
-      
-      // Clear URL params
-      window.history.replaceState({}, '', '/dashboard');
-      
-      console.log(`✅ Facebook OAuth complete! Token stored. Welcome ${fbUser || 'User'}`);
-    }
+    const handleOAuthCallback = async () => {
+      if (fbauth === 'success' && token) {
+        console.log(`[OAuth] Received token from backend, storing in localStorage and auth store...`);
+        
+        // Store token in localStorage for persistence
+        localStorage.setItem('token', token);
+        
+        // CRITICAL: Update Zustand auth store immediately so API interceptor can find the token
+        // This ensures all subsequent API requests have the Authorization header
+        login({ 
+          id: '', 
+          email: '', 
+          firstName: fbUser || 'User',
+          lastName: '',
+          plan: 'free',
+          createdAt: new Date().toISOString(),
+          usage: {
+            accountsUsed: 0,
+            messagesThisMonth: 0,
+            rulesUsed: 0,
+            aiRepliesUsed: 0,
+            lastResetDate: new Date().toISOString(),
+          },
+          limits: {
+            instagramAccounts: 0,
+            automationRules: 0,
+            aiReplies: 0,
+            monthlyMessages: 0,
+          }
+        }, token);
+        
+        // Clear URL params BEFORE fetching user data
+        window.history.replaceState({}, '', '/dashboard');
+        
+        console.log(`✅ OAuth callback processed. Now fetching user data...`);
+        
+        // Now fetch the user data to complete the auth flow
+        try {
+          const data = await authAPI.me();
+          console.log('[OAuth] User data fetched successfully:', data);
+          
+          if (data && data.user) {
+            setUser(data.user);
+            // Update Zustand with complete user data
+            login(data.user, token);
+            console.log(`✅ Facebook OAuth complete! Welcome ${data.user.firstName}`);
+          }
+        } catch (error: any) {
+          console.error('[OAuth] Error fetching user data:', error.response?.status, error.message);
+          if (error.response?.status === 401) {
+            console.error('[OAuth] Token invalid or expired');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            useAuthStore.getState().logout();
+            window.location.href = "/login?error=Token%20expired";
+          }
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    handleOAuthCallback();
   }, [searchParams, login]);
 
   useEffect(() => {
+    // Only run this effect if NOT coming from OAuth callback
+    const fbauth = searchParams.get('fbauth');
+    if (fbauth) {
+      // OAuth flow is handled by the first useEffect above
+      return;
+    }
+    
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -118,7 +162,7 @@ export default function Dashboard() {
     };
 
     fetchUser();
-  }, [fbAuthSuccess, login]); // Re-fetch user when FB auth completes
+  }, [searchParams, login]); // Re-fetch user when FB auth completes
 
   if (loading) {
     return (
