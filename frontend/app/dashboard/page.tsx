@@ -53,13 +53,15 @@ export default function Dashboard() {
     
     const handleOAuthCallback = async () => {
       if (fbauth === 'success' && token) {
-        console.log(`[OAuth] Received token from backend, storing in localStorage and auth store...`);
+        console.log(`[OAuth] Starting Facebook OAuth callback handler`);
         
-        // Store token in localStorage for persistence
+        // STEP 1: Store token IMMEDIATELY in both localStorage and Zustand
+        // This must happen before ANY API calls
         localStorage.setItem('token', token);
+        console.log(`[OAuth] ✓ Token stored in localStorage`);
         
-        // CRITICAL: Update Zustand auth store immediately so API interceptor can find the token
-        // This ensures all subsequent API requests have the Authorization header
+        // STEP 2: Update Zustand auth store with temporary user data
+        // This ensures API interceptor has the token for all subsequent requests
         login({ 
           id: '', 
           email: '', 
@@ -81,32 +83,63 @@ export default function Dashboard() {
             monthlyMessages: 0,
           }
         }, token);
+        console.log(`[OAuth] ✓ Zustand auth store updated with token`);
         
-        // Clear URL params BEFORE fetching user data
+        // STEP 3: Clear URL params immediately to prevent re-processing
         window.history.replaceState({}, '', '/dashboard');
+        console.log(`[OAuth] ✓ URL params cleared`);
         
-        console.log(`✅ OAuth callback processed. Now fetching user data...`);
+        // STEP 4: Wait a tick to ensure token is available in API interceptor
+        await new Promise(r => setTimeout(r, 100));
         
-        // Now fetch the user data to complete the auth flow
+        // STEP 5: Fetch complete user data
+        console.log(`[OAuth] Fetching complete user data...`);
         try {
           const data = await authAPI.me();
-          console.log('[OAuth] User data fetched successfully:', data);
+          console.log('[OAuth] ✓ User data fetched successfully:', data);
           
           if (data && data.user) {
             setUser(data.user);
             // Update Zustand with complete user data
             login(data.user, token);
-            console.log(`✅ Facebook OAuth complete! Welcome ${data.user.firstName}`);
+            console.log(`[OAuth] ✅ Facebook OAuth complete! Welcome ${data.user.firstName}`);
+          } else {
+            console.warn('[OAuth] User data missing in response, using temporary data');
+            setUser({
+              id: '',
+              firstName: fbUser || 'User',
+              lastName: '',
+              email: '',
+              plan: 'free',
+              usage: { messagesThisMonth: 0, rulesUsed: 0, aiRepliesUsed: 0 },
+              limits: { automationRules: 0, aiReplies: 0 },
+            });
           }
         } catch (error: any) {
           console.error('[OAuth] Error fetching user data:', error.response?.status, error.message);
+          
+          // IMPORTANT: Don't immediately redirect on first fetch error
+          // The token is valid, so display the dashboard with temporary user data
           if (error.response?.status === 401) {
-            console.error('[OAuth] Token invalid or expired');
+            console.error('[OAuth] Token verification failed');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             useAuthStore.getState().logout();
-            window.location.href = "/login?error=Token%20expired";
+            // Only redirect if token is truly invalid
+            return setLoading(false);
           }
+          
+          // For other errors, keep user logged in and show dashboard
+          console.warn('[OAuth] Showing dashboard with temporary data, error was:', error.message);
+          setUser({
+            id: '',
+            firstName: fbUser || 'User',
+            lastName: '',
+            email: '',
+            plan: 'free',
+            usage: { messagesThisMonth: 0, rulesUsed: 0, aiRepliesUsed: 0 },
+            limits: { automationRules: 0, aiReplies: 0 },
+          });
         } finally {
           setLoading(false);
         }
@@ -133,22 +166,26 @@ export default function Dashboard() {
       return;
     }
 
+    let retries = 0;
+    const maxRetries = 2;
+    
     const fetchUser = async () => {
       try {
-        console.log('[Dashboard] Fetching user data with token...');
+        console.log(`[Dashboard] Fetching user data (attempt ${retries + 1})...`);
         const data = await authAPI.me();
-        console.log('[Dashboard] User data fetched successfully:', data);
+        console.log('[Dashboard] ✓ User data fetched successfully:', data);
         
         if (data && data.user) {
           setUser(data.user);
           
           // Update Zustand auth store with complete user data
           login(data.user, token);
+          setLoading(false);
         } else {
           throw new Error("Server returned no user data");
         }
       } catch (error: any) {
-        console.error('[Dashboard] Error fetching user:', error.response?.status, error.message);
+        console.error(`[Dashboard] Error fetching user (attempt ${retries + 1}):`, error.response?.status, error.message);
         
         // Check if it's an auth error
         if (error.response?.status === 401) {
@@ -156,14 +193,23 @@ export default function Dashboard() {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           useAuthStore.getState().logout();
+          setLoading(false);
+          window.location.href = "/login?error=Session expired";
+          return;
         }
         
-        // Redirect to login
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 500);
-      } finally {
+        // Retry once on network errors
+        if (retries < maxRetries && !error.response?.status) {
+          retries++;
+          console.log(`[Dashboard] Retrying in 500ms...`);
+          setTimeout(fetchUser, 500);
+          return;
+        }
+        
+        // After retries fail, redirect to login
+        console.error('[Dashboard] Failed to fetch user after retries');
         setLoading(false);
+        window.location.href = "/login?error=Failed to load dashboard";
       }
     };
 

@@ -30,16 +30,16 @@ apiClient.interceptors.request.use(
     // If not in store, try localStorage (fallback for page reloads)
     if (!token && typeof window !== 'undefined') {
       token = localStorage.getItem('token');
-      if (token && !useAuthStore.getState().token) {
-        console.log(`[API] Found token in localStorage for ${config.url}`);
+      if (token) {
+        console.debug(`[API] Found token in localStorage for ${config.url}, syncing to Zustand`);
       }
     }
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log(`[API] ${config.method?.toUpperCase()} ${config.url} - Token added`);
+      console.debug(`[API] ${config.method?.toUpperCase()} ${config.url} - Token: ${token.substring(0, 20)}...`);
     } else {
-      console.log(`[API] ${config.method?.toUpperCase()} ${config.url} - No token`);
+      console.warn(`[API] ${config.method?.toUpperCase()} ${config.url} - No auth token available`);
     }
     
     return config;
@@ -56,13 +56,24 @@ apiClient.interceptors.response.use(
     // If 401 and not already retried, try to refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+      console.debug('[API] Received 401, attempting token refresh');
+      
       try {
-        const { token } = useAuthStore.getState();
+        let { token } = useAuthStore.getState();
         
-        // If no token or malformed token, clear everything and reject
+        // If no token in store, check localStorage
+        if (!token && typeof window !== 'undefined') {
+          token = localStorage.getItem('token');
+        }
+        
+        // If still no token, clear everything and reject
         if (!token) {
           console.log('[API] No token available for refresh, logging out');
           useAuthStore.getState().logout();
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
           return Promise.reject(error);
         }
         
@@ -80,13 +91,24 @@ apiClient.interceptors.response.use(
         );
 
         const { token: newToken } = response.data;
-        useAuthStore.getState().login(useAuthStore.getState().user!, newToken);
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+          useAuthStore.getState().login(currentUser, newToken);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('token', newToken);
+          }
+        }
 
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        console.debug('[API] Token refreshed, retrying request');
         return apiClient(originalRequest);
       } catch (refreshError) {
         console.log('[API] Token refresh failed, clearing session');
         useAuthStore.getState().logout();
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
         return Promise.reject(refreshError);
       }
     }

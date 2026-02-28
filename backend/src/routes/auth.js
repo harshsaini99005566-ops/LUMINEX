@@ -602,7 +602,10 @@ router.get('/facebook/callback', async (req, res) => {
     }
 
     // Redirect to dashboard with token in URL (for localStorage backup)
-    logger.info('[Facebook OAuth] Login successful, redirecting to dashboard');
+    // Also ensure cookie is set for fallback auth
+    logger.info('[Facebook OAuth] Login successful, redirecting to dashboard with token');
+    logger.info('[Facebook OAuth] Token expires at:', tokenExpiresAt);
+    logger.info('[Facebook OAuth] User ID:', user._id);
     return res.redirect(`${FRONTEND_URL}/dashboard?fbauth=success&token=${encodeURIComponent(token)}&user=${encodeURIComponent(user.firstName)}`);
   } catch (err) {
     logger.error('[Facebook OAuth] Token exchange failed:', err.message);
