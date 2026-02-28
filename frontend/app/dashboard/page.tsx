@@ -36,6 +36,7 @@ interface User {
 interface FacebookPage {
   id: string;
   name: string;
+  hasInstagram?: boolean;
 }
 
 export default function Dashboard() {
@@ -218,21 +219,29 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user) {
+      console.log('[Dashboard] ⏸ Skipping Facebook pages fetch - user not loaded yet');
       return;
     }
 
     const fetchFacebookPages = async () => {
+      console.log('\n========== FETCHING FACEBOOK PAGES FROM FRONTEND ==========');
       const token = localStorage.getItem('token');
+      
       if (!token) {
-        console.warn('[Dashboard] No token available for fetching Facebook pages');
+        console.warn('[Dashboard] ❌ No token available for fetching Facebook pages');
+        console.log('========== FACEBOOK PAGES FETCH ABORTED ==========\n');
         return;
       }
+      
+      console.log('[Dashboard] ✅ Token found:', token.substring(0, 20) + '...');
+      console.log('[Dashboard] User logged in:', user.email);
 
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-        console.log('[Dashboard] Fetching Facebook pages from:', `${apiUrl}/api/auth/facebook/pages`);
+        const endpoint = `${apiUrl}/api/auth/facebook/pages`;
+        console.log('[Dashboard] Calling API endpoint:', endpoint);
         
-        const res = await fetch(`${apiUrl}/api/auth/facebook/pages`, {
+        const res = await fetch(endpoint, {
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -240,28 +249,34 @@ export default function Dashboard() {
           credentials: 'include',
         });
         
-        console.log('[Dashboard] Facebook pages response status:', res.status);
+        console.log('[Dashboard] Response status:', res.status, res.statusText);
         
         if (!res.ok) {
           const errorData = await res.json();
-          console.warn('[Dashboard] Failed to fetch pages:', errorData);
+          console.warn('[Dashboard] ❌ Failed to fetch pages. Error:', errorData);
+          console.log('[Dashboard] Setting facebookPages to empty array');
           setFacebookPages([]);
+          console.log('========== FACEBOOK PAGES FETCH FAILED ==========\n');
           return;
         }
         
         const data = await res.json();
-        console.log('[Dashboard] Facebook pages fetched successfully:', data);
+        console.log('[Dashboard] ✅ Facebook pages API response:', JSON.stringify(data, null, 2));
         
         if (data && data.pages) {
+          console.log(`[Dashboard] ✅ Setting ${data.pages.length} Facebook pages to state`);
+          console.log('[Dashboard] Pages details:', data.pages.map(p => `${p.name} (${p.id})`).join(', '));
           setFacebookPages(data.pages);
-          console.log(`[Dashboard] Set ${data.pages.length} Facebook pages`);
         } else {
-          console.log('[Dashboard] No pages in response');
+          console.log('[Dashboard] ⚠ No pages array in response, setting empty array');
           setFacebookPages([]);
         }
+        console.log('========== FACEBOOK PAGES FETCH COMPLETE ==========\n');
       } catch (error) {
-        console.error('[Dashboard] Error fetching Facebook pages:', error);
+        console.error('[Dashboard] ❌ Exception fetching Facebook pages:', error);
+        console.error('[Dashboard] Error details:', error instanceof Error ? error.message : error);
         setFacebookPages([]);
+        console.log('========== FACEBOOK PAGES FETCH ERROR ==========\n');
       }
     };
 

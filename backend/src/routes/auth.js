@@ -555,6 +555,9 @@ router.get('/facebook/callback', async (req, res) => {
 
     // Fetch user's Facebook Pages (with full details including Instagram accounts)
     try {
+      console.log('\n========== FETCHING FACEBOOK PAGES ==========');
+      console.log('[Facebook OAuth] Calling Graph API: https://graph.facebook.com/v19.0/me/accounts');
+      
       const pagesRes = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
         params: {
           access_token,
@@ -562,6 +565,8 @@ router.get('/facebook/callback', async (req, res) => {
         }
       });
       const pages = pagesRes.data.data || [];
+      console.log('[Facebook OAuth] ✅ Graph API Response - Pages found:', pages.length);
+      console.log('[Facebook OAuth] Raw pages data:', JSON.stringify(pages, null, 2));
       logger.info(`[Facebook OAuth] User has ${pages.length} Facebook page(s)`);
       
       // Store pages info using schema field names (pageId, pageName)
@@ -570,9 +575,18 @@ router.get('/facebook/callback', async (req, res) => {
         pageName: page.name,
         hasInstagram: !!(page.instagram_business_account && page.instagram_business_account.id),
       }));
+      
+      console.log('[Facebook OAuth] Transformed pages for DB:', JSON.stringify(user.facebookPages, null, 2));
+      
       await user.save();
+      console.log('[Facebook OAuth] ✅ Saved pages to database successfully');
+      console.log('[Facebook OAuth] User._id:', user._id);
+      console.log('[Facebook OAuth] Total pages saved:', user.facebookPages.length);
       logger.info(`[Facebook OAuth] Saved ${user.facebookPages.length} pages to user document`);
+      console.log('========== FACEBOOK PAGES SAVED ==========\n');
     } catch (pagesErr) {
+      console.error('[Facebook OAuth] ❌ Failed to fetch/save pages:', pagesErr.message);
+      console.error('[Facebook OAuth] Error details:', pagesErr.response?.data || pagesErr);
       logger.warn('[Facebook OAuth] Could not fetch pages:', pagesErr.message);
     }
 
@@ -623,9 +637,12 @@ router.get('/facebook/callback', async (req, res) => {
  */
 router.get('/facebook/pages', authenticate, async (req, res) => {
   try {
+    console.log('\n========== FACEBOOK PAGES ENDPOINT CALLED ==========');
     const userId = req.user && req.user.id;
+    console.log('[Facebook Pages] User ID from JWT:', userId);
     
     if (!userId) {
+      console.log('[Facebook Pages] ❌ No user ID - returning 401');
       return res.status(401).json({ 
         success: false, 
         error: 'User not authenticated',
@@ -635,14 +652,19 @@ router.get('/facebook/pages', authenticate, async (req, res) => {
     
     // Fetch user with Facebook pages data
     const user = await User.findById(userId).select('facebookPages facebookAccessToken firstName lastName email');
+    console.log('[Facebook Pages] User found:', user ? 'YES' : 'NO');
     
     if (!user) {
+      console.log('[Facebook Pages] ❌ User not found in database');
       return res.status(404).json({ 
         success: false, 
         error: 'User not found',
         pages: []
       });
     }
+    
+    console.log('[Facebook Pages] Raw facebookPages from DB:', JSON.stringify(user.facebookPages, null, 2));
+    console.log('[Facebook Pages] Number of pages in DB:', user.facebookPages?.length || 0);
     
     // Return pages data - transform schema format to frontend format
     const pages = (user.facebookPages || []).map(page => ({
@@ -651,9 +673,10 @@ router.get('/facebook/pages', authenticate, async (req, res) => {
       hasInstagram: page.hasInstagram
     }));
     
+    console.log('[Facebook Pages] ✅ Transformed pages for frontend:', JSON.stringify(pages, null, 2));
     logger.info('[Facebook Pages] Returning ' + pages.length + ' pages for user', { userId });
     
-    return res.json({
+    const response = {
       success: true,
       pages: pages,
       hasConnected: pages.length > 0,
@@ -662,8 +685,15 @@ router.get('/facebook/pages', authenticate, async (req, res) => {
         name: `${user.firstName} ${user.lastName}`,
         email: user.email
       }
-    });
+    };
+    
+    console.log('[Facebook Pages] ✅ Final response:', JSON.stringify(response, null, 2));
+    console.log('========== FACEBOOK PAGES ENDPOINT COMPLETE ==========\n');
+    
+    return res.json(response);
   } catch (err) {
+    console.error('[Facebook Pages] ❌ ERROR:', err.message);
+    console.error('[Facebook Pages] Stack:', err.stack);
     logger.error('[Facebook Pages] Failed to fetch pages:', err.message);
     return res.status(500).json({ 
       success: false, 
