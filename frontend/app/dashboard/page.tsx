@@ -33,9 +33,15 @@ interface User {
   trialEndsAt?: string;
 }
 
+interface FacebookPage {
+  id: string;
+  name: string;
+}
+
 export default function Dashboard() {
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
+  const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
   const [loading, setLoading] = useState(true);
   const { login } = useAuthStore();
 
@@ -163,6 +169,58 @@ export default function Dashboard() {
 
     fetchUser();
   }, [searchParams, login]); // Re-fetch user when FB auth completes
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const fetchFacebookPages = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('[Dashboard] No token available for fetching Facebook pages');
+        return;
+      }
+
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+        console.log('[Dashboard] Fetching Facebook pages from:', `${apiUrl}/api/auth/facebook/pages`);
+        
+        const res = await fetch(`${apiUrl}/api/auth/facebook/pages`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+        });
+        
+        console.log('[Dashboard] Facebook pages response status:', res.status);
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          console.warn('[Dashboard] Failed to fetch pages:', errorData);
+          setFacebookPages([]);
+          return;
+        }
+        
+        const data = await res.json();
+        console.log('[Dashboard] Facebook pages fetched successfully:', data);
+        
+        if (data && data.pages) {
+          setFacebookPages(data.pages);
+          console.log(`[Dashboard] Set ${data.pages.length} Facebook pages`);
+        } else {
+          console.log('[Dashboard] No pages in response');
+          setFacebookPages([]);
+        }
+      } catch (error) {
+        console.error('[Dashboard] Error fetching Facebook pages:', error);
+        setFacebookPages([]);
+      }
+    };
+
+    fetchFacebookPages();
+  }, [user]);
 
   if (loading) {
     return (
@@ -336,6 +394,69 @@ export default function Dashboard() {
             </Link>
           )}
         </div>
+      </div>
+
+      {/* Connected Facebook Pages - For Meta Reviewer */}
+      <div className="mt-8 card-elevated border-none">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-heading font-bold text-brand-text">
+              Connected Facebook Pages
+            </h2>
+            <p className="text-sm text-brand-text-secondary mt-1">
+              Your connected Facebook pages and linked Instagram Business accounts
+            </p>
+          </div>
+          <span className="px-3 py-1 bg-brand-primary-50 text-brand-primary text-xs font-bold rounded-full">
+            {facebookPages.length}
+          </span>
+        </div>
+
+        {facebookPages && facebookPages.length > 0 ? (
+          <div className="space-y-3">
+            {facebookPages.map((page, idx) => (
+              <div 
+                key={page.id || idx} 
+                className="p-4 rounded-lg bg-brand-light-2 border border-brand-border hover:border-brand-primary/30 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="font-semibold text-brand-text">
+                      • {page.name}
+                    </p>
+                    <p className="text-sm text-brand-text-secondary font-mono">
+                      (Page ID: {page.id})
+                    </p>
+                    {page.hasInstagram && (
+                      <p className="text-xs text-brand-primary mt-1">
+                        ✓ Instagram Business Account linked
+                      </p>
+                    )}
+                  </div>
+                  <div className="px-2 py-1 bg-green-500/20 text-green-600 text-xs font-bold rounded">
+                    CONNECTED
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="p-6 rounded-lg bg-brand-light border border-dashed border-brand-text-secondary/30 text-center">
+              <p className="text-brand-text-secondary mb-4">
+                No Facebook Pages connected yet.
+              </p>
+              <Link href="/dashboard/accounts">
+                <button className="btn-primary inline-flex items-center gap-2">
+                  <span>🔗 Connect Your Facebook Account</span>
+                </button>
+              </Link>
+              <p className="text-xs text-brand-text-secondary mt-4">
+                Go to Accounts page and click "Connect Facebook" to display your pages here
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Getting Started Guide */}

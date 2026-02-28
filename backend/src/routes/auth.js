@@ -564,14 +564,14 @@ router.get('/facebook/callback', async (req, res) => {
       const pages = pagesRes.data.data || [];
       logger.info(`[Facebook OAuth] User has ${pages.length} Facebook page(s)`);
       
-      // Store full pages info in user document for display in frontend
+      // Store pages info using schema field names (pageId, pageName)
       user.facebookPages = pages.map(page => ({
-        id: page.id,
-        name: page.name,
-        access_token: page.access_token,
-        instagram_account: page.instagram_business_account || null,
+        pageId: page.id,
+        pageName: page.name,
+        hasInstagram: !!(page.instagram_business_account && page.instagram_business_account.id),
       }));
       await user.save();
+      logger.info(`[Facebook OAuth] Saved ${user.facebookPages.length} pages to user document`);
     } catch (pagesErr) {
       logger.warn('[Facebook OAuth] Could not fetch pages:', pagesErr.message);
     }
@@ -620,7 +620,15 @@ router.get('/facebook/callback', async (req, res) => {
  */
 router.get('/facebook/pages', authenticate, async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.user && req.user.id;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'User not authenticated',
+        pages: []
+      });
+    }
     
     // Fetch user with Facebook pages data
     const user = await User.findById(userId).select('facebookPages facebookAccessToken firstName lastName email');
@@ -628,22 +636,24 @@ router.get('/facebook/pages', authenticate, async (req, res) => {
     if (!user) {
       return res.status(404).json({ 
         success: false, 
-        error: 'User not found' 
-      });
-    }
-    
-    if (!user.facebookAccessToken) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'No Facebook account connected. Please connect Facebook first.',
+        error: 'User not found',
         pages: []
       });
     }
     
-    // Return pages data from user document
+    // Return pages data - transform schema format to frontend format
+    const pages = (user.facebookPages || []).map(page => ({
+      id: page.pageId,
+      name: page.pageName,
+      hasInstagram: page.hasInstagram
+    }));
+    
+    logger.info('[Facebook Pages] Returning ' + pages.length + ' pages for user', { userId });
+    
     return res.json({
       success: true,
-      pages: user.facebookPages || [],
+      pages: pages,
+      hasConnected: pages.length > 0,
       user: {
         id: user._id,
         name: `${user.firstName} ${user.lastName}`,
@@ -654,8 +664,40 @@ router.get('/facebook/pages', authenticate, async (req, res) => {
     logger.error('[Facebook Pages] Failed to fetch pages:', err.message);
     return res.status(500).json({ 
       success: false, 
-      error: 'Failed to fetch Facebook pages' 
+      error: 'Failed to fetch Facebook pages',
+      pages: []
     });
+  }
+});
+
+/**
+ * Debug endpoint: Get current user's Facebook pages (test endpoint)
+ * Useful for verifying OAuth flow and page storage
+ */
+router.get('/facebook/pages/debug', authenticate, async (req, res) => {
+  try {
+    const userId = req.user && req.user.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    return res.json({
+      userId: user._id,
+      email: user.email,
+      hasFacebookAccessToken: !!user.facebookAccessToken,
+      facebookPages: user.facebookPages || [],
+      rawSchema: JSON.stringify(user.facebookPages, null, 2)
+    });
+  } catch (err) {
+    logger.error('[Facebook Pages Debug]:', err.message);
+    return res.status(500).json({ error: err.message });
   }
 });
 
