@@ -236,6 +236,13 @@ Ensure your privacy policy includes:
 > 
 > We have two Facebook Pages shown here. [Read each page name and ID] Both pages show the CONNECTED status, indicating they are successfully linked to our application."
 
+**Permission Explanation (Read exactly):**
+> "Pages fetched from Facebook: We fetch your managed pages from Facebook Graph API."
+>
+> "Pages displayed in UI: We show connected pages in this dashboard section."
+>
+> "Why permission is needed: Meta requires clear and transparent permission usage."
+
 **Technical Details**:
 > "In the browser Network tab, you can see the API request to fetch pages returns proper JSON with the pages array. The request includes proper authentication via JWT token. The response status is 200 OK. No sensitive data like access tokens are exposed in the response."
 

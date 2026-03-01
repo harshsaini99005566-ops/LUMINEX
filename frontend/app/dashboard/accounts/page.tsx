@@ -257,6 +257,9 @@ export default function AccountsPage() {
                 <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <p className="text-xs text-blue-300 font-mono">
                     <strong>Why we need these permissions:</strong><br/>
+                    • <strong>Pages fetched from Facebook</strong>: We fetch your managed pages from Facebook Graph API<br/>
+                    • <strong>Pages displayed in UI</strong>: We show connected pages in this dashboard section<br/>
+                    • <strong>Why permission is needed</strong>: Meta requires clear and transparent permission usage<br/>
                     • <strong>pages_show_list</strong>: Display your Facebook pages<br/>
                     • <strong>pages_read_engagement</strong>: View page engagement metrics<br/>
                     • <strong>pages_messaging</strong>: Send and receive messages on behalf of your pages<br/>

@@ -473,6 +473,15 @@ export default function Dashboard() {
           </span>
         </div>
 
+        <div className="mb-4 p-4 rounded-lg bg-brand-light-2 border border-brand-border">
+          <p className="text-xs text-brand-text-secondary">
+            <strong>Why we need these permissions:</strong><br />
+            • <strong>Pages fetched from Facebook</strong>: We fetch your managed pages from Facebook Graph API<br />
+            • <strong>Pages displayed in UI</strong>: We show connected pages in this dashboard section<br />
+            • <strong>Why permission is needed</strong>: Meta requires clear and transparent permission usage
+          </p>
+        </div>
+
         {facebookPages && facebookPages.length > 0 ? (
           <div className="space-y-3">
             {facebookPages.map((page, idx) => (

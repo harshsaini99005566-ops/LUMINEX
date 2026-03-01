@@ -207,6 +207,10 @@ Record the following sequence:
 **Scroll to show:**
 - The permission explanation box at the bottom
 - Read the permissions aloud
+- Read these exact lines aloud:
+   - **Pages fetched from Facebook**: We fetch your managed pages from Facebook Graph API
+   - **Pages displayed in UI**: We show connected pages in this dashboard section
+   - **Why permission is needed**: Meta requires clear and transparent permission usage
 
 ---
 
@@ -295,6 +299,10 @@ LUMINEX displays the user's Facebook pages in the dashboard (timestamp 1:20-2:00
 in screencast) to allow them to select which page they want to set up automation 
 for. This is essential as users need to choose the specific page that will use 
 our automation features.
+
+Pages fetched from Facebook: We fetch managed pages from Facebook Graph API.
+Pages displayed in UI: We show connected pages in the dashboard section.
+Why permission is needed: Meta requires clear and transparent permission usage.
 ```
 
 #### **pages_read_engagement**
