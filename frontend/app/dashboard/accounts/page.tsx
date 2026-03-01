@@ -41,6 +41,7 @@ export default function AccountsPage() {
 
   useEffect(() => {
     fetchAccounts()
+    fetchFacebookPages()
     
     // Check for Facebook OAuth success
     const fbOauth = searchParams.get('fb_oauth')
@@ -207,11 +208,11 @@ export default function AccountsPage() {
             </div>
 
             {/* Facebook Pages List */}
-            {facebookPages.length > 0 && (
-              <div className="mt-6 space-y-3">
-                <h3 className="text-sm font-semibold text-cyber-primary font-mono">
-                  YOUR FACEBOOK PAGES ({facebookPages.length})
-                </h3>
+            <div className="mt-6 space-y-3">
+              <h3 className="text-sm font-semibold text-cyber-primary font-mono">
+                YOUR FACEBOOK PAGES ({facebookPages.length})
+              </h3>
+              {facebookPages.length > 0 ? (
                 <div className="grid gap-3">
                   {facebookPages.map((page) => (
                     <motion.div
@@ -252,23 +253,29 @@ export default function AccountsPage() {
                     </motion.div>
                   ))}
                 </div>
-                
-                {/* Permission explanation */}
-                <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-xs text-blue-300 font-mono">
-                    <strong>Why we need these permissions:</strong><br/>
-                    • <strong>Pages fetched from Facebook</strong>: We fetch your managed pages from Facebook Graph API<br/>
-                    • <strong>Pages displayed in UI</strong>: We show connected pages in this dashboard section<br/>
-                    • <strong>Why permission is needed</strong>: Meta requires clear and transparent permission usage<br/>
-                    • <strong>pages_show_list</strong>: Display your Facebook pages<br/>
-                    • <strong>pages_read_engagement</strong>: View page engagement metrics<br/>
-                    • <strong>pages_messaging</strong>: Send and receive messages on behalf of your pages<br/>
-                    • <strong>instagram_manage_messages</strong>: Automate Instagram DM responses<br/>
-                    • <strong>instagram_manage_comments</strong>: Automate Instagram comment replies
+              ) : (
+                <div className="p-4 bg-cyber-dark/50 border border-cyber-primary/20 rounded-lg">
+                  <p className="text-xs text-cyber-text/70 font-mono">
+                    No Facebook Pages found yet. Connect Facebook and grant permissions to load your managed pages.
                   </p>
                 </div>
+              )}
+
+              {/* Permission explanation */}
+              <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-xs text-blue-300 font-mono">
+                  <strong>Why we need these permissions:</strong><br/>
+                  • <strong>Pages fetched from Facebook</strong>: We fetch your managed pages from Facebook Graph API<br/>
+                  • <strong>Pages displayed in UI</strong>: We show connected pages in this dashboard section<br/>
+                  • <strong>Why permission is needed</strong>: Meta requires clear and transparent permission usage<br/>
+                  • <strong>pages_show_list</strong>: Display your Facebook pages<br/>
+                  • <strong>pages_read_engagement</strong>: View page engagement metrics<br/>
+                  • <strong>pages_messaging</strong>: Send and receive messages on behalf of your pages<br/>
+                  • <strong>instagram_manage_messages</strong>: Automate Instagram DM responses<br/>
+                  • <strong>instagram_manage_comments</strong>: Automate Instagram comment replies
+                </p>
               </div>
-            )}
+            </div>
           </CyberCard>
         </motion.div>
 
