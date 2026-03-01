@@ -1,3 +1,10 @@
+# MongoDB database files
+mongodb-data/
+mongodb-log/
+*.lock
+WiredTiger*
+_tmp/
+
 # Dependencies
 node_modules/
 npm-debug.log

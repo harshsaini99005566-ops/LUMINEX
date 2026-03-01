@@ -95,7 +95,7 @@ const createRateLimiter = (options = {}) => {
  */
 const authLimiter = createRateLimiter({
   windowMs: process.env.NODE_ENV === 'production' ? 15 * 60 * 1000 : 60 * 1000, // 15 min prod, 1 min dev
-  maxRequests: process.env.NODE_ENV === 'production' ? 5 : 50, // 5 attempts prod, 50 dev
+  maxRequests: process.env.NODE_ENV === 'production' ? 5 : 1000, // 5 attempts prod, 1000 dev (very generous for testing)
   keyGenerator: (req) => `auth-${req.ip}-${req.body?.email || 'unknown'}`,
   message: 'Too many authentication attempts, please try again in 15 minutes',
 });

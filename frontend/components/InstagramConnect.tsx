@@ -36,22 +36,13 @@ export function InstagramConnect({ onSuccess, onError }: InstagramConnectProps) 
       setLoading(true)
       setError(null)
 
-      // Get auth URL from backend
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/instagram/auth/url`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to get authorization URL')
-      }
-
-      const { url } = await response.json()
-
-      // Redirect to Meta login
-      window.location.href = url
+      // Use Facebook OAuth to connect Instagram Business accounts
+      // Instagram Business accounts MUST be connected through Facebook Pages
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
+      const facebookOAuthUrl = `${apiUrl}/api/auth/facebook`
+      
+      // Redirect to Facebook OAuth
+      window.location.href = facebookOAuthUrl
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       setError(errorMessage)
@@ -70,20 +61,20 @@ export function InstagramConnect({ onSuccess, onError }: InstagramConnectProps) 
         <div className="mb-6">
           <div className="text-4xl mb-4">📱</div>
           <h3 className="text-xl font-bold text-cyber-primary mb-2 font-mono">
-            INSTAGRAM BUSINESS ACCOUNT
+            CONNECT INSTAGRAM BUSINESS
           </h3>
           <p className="text-cyber-text/60">
-            Connect your Instagram Business Account to enable DM automation
+            Connect via Facebook to access your Instagram Business accounts linked to Facebook Pages
           </p>
         </div>
 
         <div className="bg-cyber-dark rounded-lg p-4 mb-6 text-left text-sm font-mono">
           <div className="text-cyber-text/60 mb-3">Requirements:</div>
           <ul className="space-y-1 text-cyber-text/70">
+            <li>✓ Facebook account with managed pages</li>
             <li>✓ Instagram Business Account (not personal)</li>
-            <li>✓ Linked to a Facebook Page</li>
-            <li>✓ Access to business settings</li>
-            <li>✓ Accepts permissions for messaging</li>
+            <li>✓ Instagram linked to your Facebook Page</li>
+            <li>✓ Admin access to Facebook Page</li>
           </ul>
         </div>
 
@@ -104,11 +95,11 @@ export function InstagramConnect({ onSuccess, onError }: InstagramConnectProps) 
           className="w-full"
           disabled={loading}
         >
-          {loading ? 'Redirecting to Instagram...' : 'Connect Instagram Account'}
+          {loading ? 'Redirecting to Facebook...' : 'Connect via Facebook'}
         </CyberButton>
 
         <p className="text-xs text-cyber-text/40 mt-4">
-          You&apos;ll be redirected to Instagram to approve access
+          You&apos;ll login with Facebook to access Instagram Business accounts
         </p>
       </CyberCard>
     </motion.div>

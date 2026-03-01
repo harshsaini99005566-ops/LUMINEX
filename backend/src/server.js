@@ -255,8 +255,23 @@ const startServer = async () => {
 
   // API Routes with /api prefix (apply rate limiting)
   try {
-    // Auth routes (stricter rate limiting)
-    app.use("/api/auth", authLimiter, require("./routes/auth"));
+    // Conditional rate limiter for auth routes (skip OAuth callbacks)
+    const conditionalAuthLimiter = (req, res, next) => {
+      // Skip rate limiting for OAuth callback endpoints
+      const oauthPaths = ['/facebook', '/facebook/callback', '/instagram', '/instagram/callback'];
+      const isOAuthPath = oauthPaths.some(path => req.path.startsWith(path));
+      
+      if (isOAuthPath) {
+        // Skip rate limiting for OAuth flows
+        return next();
+      }
+      
+      // Apply rate limiting for other auth endpoints
+      return authLimiter(req, res, next);
+    };
+
+    // Auth routes (stricter rate limiting, except OAuth)
+    app.use("/api/auth", conditionalAuthLimiter, require("./routes/auth"));
 
     // Main API routes (moderate rate limiting)
     app.use("/api/instagram", apiLimiter, require("./routes/instagram"));
