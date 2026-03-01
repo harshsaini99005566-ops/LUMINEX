@@ -43,9 +43,27 @@ export default function AccountsPage() {
     fetchAccounts()
     fetchFacebookPages()
     
+    // Check for Instagram OAuth success
+    const connected = searchParams.get('connected')
+    const igUsername = searchParams.get('username')
+    const igError = searchParams.get('error')
+    
+    if (connected === 'true' && igUsername) {
+      setSuccess(`✅ Successfully connected Instagram account @${igUsername}!`)
+      fetchAccounts()
+      // Clear URL params
+      window.history.replaceState({}, '', '/dashboard/accounts')
+    }
+    
+    if (igError) {
+      setError(`Instagram connection error: ${igError}`)
+      // Clear URL params
+      window.history.replaceState({}, '', '/dashboard/accounts')
+    }
+    
     // Check for Facebook OAuth success
     const fbOauth = searchParams.get('fb_oauth')
-    const fbError = searchParams.get('error')
+    const fbError = searchParams.get('fb_error')
     const fbPages = searchParams.get('pages')
     const fbUser = searchParams.get('user')
     
