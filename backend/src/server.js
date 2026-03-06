@@ -88,6 +88,9 @@ const startServer = async () => {
   app.use(sanitizeInput);
   app.use(requestLogger);
 
+  // Serve uploaded files
+  app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
   // Step 5.5: Session and Passport Configuration
   // CRITICAL: This must come AFTER body parsing and BEFORE routes
   const passport = require('passport');
@@ -286,6 +289,7 @@ const startServer = async () => {
     );
     app.use("/api/billing", apiLimiter, require("./routes/billing"));
     app.use("/api/analytics", apiLimiter, require("./routes/analytics"));
+    app.use("/api/posts", apiLimiter, require("./routes/posts"));
 
     // Webhook routes (no rate limiting for Stripe/Instagram webhooks)
     app.use("/webhooks", require("./routes/webhooks"));
@@ -305,7 +309,9 @@ const startServer = async () => {
   try {
     require("./jobs/resetMonthlyUsage");
     require("./jobs/refreshInstagramTokens");
-    logger.info("✅ Scheduled jobs started (usage reset, token refresh)");
+    const { startScheduler } = require("./jobs/postScheduler");
+    startScheduler();
+    logger.info("✅ Scheduled jobs started (usage reset, token refresh, post scheduler)");
   } catch (jobError) {
     logger.warn("Scheduled jobs not available", { error: jobError.message });
   }

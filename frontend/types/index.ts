@@ -257,6 +257,96 @@ export interface AccountStats {
 }
 
 // ============================================
+// POST PUBLISHING TYPES
+// ============================================
+
+export interface ScheduledPost {
+  _id: string;
+  userId: string;
+  instagramAccountId: string;
+  mediaUrl?: string;
+  mediaType: 'image' | 'video' | 'carousel';
+  mediaUrls?: string[];
+  caption: string;
+  hashtags: string[];
+  location?: {
+    id: string;
+    name: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  scheduledFor?: string;
+  status: 'draft' | 'scheduled' | 'publishing' | 'published' | 'failed';
+  instagramPostId?: string;
+  permalink?: string;
+  publishedAt?: string;
+  errorMessage?: string;
+  attempts: number;
+  lastAttemptAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePostInput {
+  instagramAccountId: string;
+  mediaUrl?: string;
+  mediaType: 'image' | 'video' | 'carousel';
+  mediaUrls?: string[];
+  caption: string;
+  hashtags?: string[];
+  location?: {
+    id: string;
+    name: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  scheduledFor?: string;
+  publishNow?: boolean;
+}
+
+export interface UpdatePostInput {
+  caption?: string;
+  hashtags?: string[];
+  location?: {
+    id: string;
+    name: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  scheduledFor?: string;
+}
+
+export interface MediaFile {
+  url: string;
+  type: 'image' | 'video';
+  filename: string;
+  size: number;
+}
+
+export interface HashtagSuggestion {
+  tag: string;
+  popularity: 'high' | 'medium' | 'low';
+  category: string;
+}
+
+export interface LocationResult {
+  id: string;
+  name: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+}
+
+export interface PostFilters {
+  status?: 'draft' | 'scheduled' | 'publishing' | 'published' | 'failed';
+  instagramAccountId?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+// ============================================
 // UI STATE TYPES
 // ============================================
 
