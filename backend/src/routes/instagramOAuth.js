@@ -136,7 +136,7 @@ router.get('/auth/callback', async (req, res) => {
 
     // Check if account already connected
     let account = await InstagramAccount.findOne({
-      userId,
+      user: userId,
       instagramId,
     });
 
@@ -157,7 +157,7 @@ router.get('/auth/callback', async (req, res) => {
     } else {
       // Create new account
       account = await InstagramAccount.create({
-        userId,
+        user: userId,
         instagramId,
         username: accountInfo.username,
         name: accountInfo.name,
@@ -217,7 +217,7 @@ router.get('/accounts', authenticate, async (req, res) => {
     const userId = req.user.id;
 
     const accounts = await InstagramAccount.find({
-      userId,
+      user: userId,
       isActive: true,
     }).select('-accessToken');
 
@@ -242,7 +242,7 @@ router.get('/accounts/:accountId', authenticate, async (req, res) => {
 
     const account = await InstagramAccount.findOne({
       _id: accountId,
-      userId,
+      user: userId,
     }).select('-accessToken');
 
     if (!account) {
@@ -267,7 +267,7 @@ router.delete('/accounts/:accountId', authenticate, async (req, res) => {
 
     const account = await InstagramAccount.findOne({
       _id: accountId,
-      userId,
+      user: userId,
     });
 
     if (!account) {

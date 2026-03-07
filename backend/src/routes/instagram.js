@@ -63,7 +63,7 @@ router.get('/accounts', authenticate, async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    const accounts = await InstagramAccount.find({ userId, isActive: true })
+    const accounts = await InstagramAccount.find({ user: userId, isActive: true })
       .select('-accessToken');
 
     res.json({ success: true, data: accounts });
@@ -80,7 +80,7 @@ router.delete('/accounts/:accountId', async (req, res, next) => {
 
     const account = await InstagramAccount.findOne({
       _id: accountId,
-      userId
+      user: userId
     });
 
     if (!account) {
@@ -110,7 +110,7 @@ router.get('/accounts/:accountId/conversations', async (req, res, next) => {
     // Verify account ownership
     const account = await InstagramAccount.findOne({
       _id: accountId,
-      userId
+      user: userId
     });
 
     if (!account) {
