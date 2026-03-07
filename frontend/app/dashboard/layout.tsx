@@ -41,11 +41,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link href="/dashboard">
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">A</span>
+                  <span className="text-white font-bold text-lg">L</span>
                 </div>
                 <div>
                   <h1 className="text-lg font-heading font-bold text-brand-text">
-                    AutoDM
+                    LUMINEX
                   </h1>
                   <p className="text-xs text-brand-muted">Pro</p>
                 </div>

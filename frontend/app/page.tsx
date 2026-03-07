@@ -12,7 +12,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="text-2xl font-bold font-heading">
             <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">
-              AutoDM
+              LUMINEX
             </span>
           </div>
           <div className="flex gap-3 items-center">
@@ -34,7 +34,7 @@ export default function LandingPage() {
 
         <div className="max-w-4xl mx-auto text-left relative z-10">
           <div className="inline-block mb-6 px-4 py-2 rounded-full bg-brand-primary-50 border border-brand-primary-100">
-            <span className="text-sm font-medium text-brand-primary">🚀 Introducing AutoDM Pro</span>
+            <span className="text-sm font-medium text-brand-primary">🚀 Introducing LUMINEX Pro</span>
           </div>
 
           <h1 className="text-6xl font-heading font-bold mb-8 text-brand-text max-w-3xl leading-tight">
@@ -297,7 +297,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-brand-border py-12 px-6 text-center text-sm text-brand-muted bg-white">
-        <p>© 2024 AutoDM. Built with ❤️ for creators everywhere.</p>
+        <p>© 2024 LUMINEX. Built with ❤️ for creators everywhere.</p>
       </footer>
     </div>
   )

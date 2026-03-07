@@ -117,7 +117,7 @@ export default function SignupPage() {
           <Link href="/">
             <h1 className="text-3xl font-heading font-bold mb-3">
               <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">
-                AutoDM
+                LUMINEX
               </span>
             </h1>
           </Link>

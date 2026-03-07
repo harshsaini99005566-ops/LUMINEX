@@ -17,7 +17,7 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: 'AutoDM - Instagram DM & Comment Automation',
+  title: 'LUMINEX - Instagram DM & Comment Automation',
   description: 'Enterprise-grade Instagram automation for agencies and creators',
 }
 

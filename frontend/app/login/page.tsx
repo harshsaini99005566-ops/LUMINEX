@@ -93,11 +93,11 @@ function LoginContent() {
           <Link href="/">
             <h1 className="text-3xl font-heading font-bold mb-3">
               <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">
-                AutoDM
+                LUMINEX
               </span>
             </h1>
           </Link>
-          <p className="text-lg text-brand-text-secondary font-medium">Welcome back to AutoDM</p>
+          <p className="text-lg text-brand-text-secondary font-medium">Welcome back to LUMINEX</p>
           <p className="text-sm text-brand-muted mt-2">Sign in to your account to continue</p>
         </div>
 
