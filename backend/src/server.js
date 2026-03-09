@@ -5,7 +5,8 @@ const compression = require("compression");
 const session = require("express-session");
 const dotenv = require("dotenv");
 const path = require("path");
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+// Load backend-local environment file for development/runtime consistency.
+dotenv.config({ path: path.join(__dirname, "../.env") });
 console.log("IG APP ID:", process.env.INSTAGRAM_APP_ID);
 console.log("FB Client ID:", process.env.FACEBOOK_CLIENT_ID);
 
@@ -43,6 +44,87 @@ const startServer = async () => {
 
   // Step 2: Create Express app
   const app = express();
+
+  const normalizeUrl = (value) => {
+    if (!value || typeof value !== "string") {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    return trimmed.replace(/\/+$/, "");
+  };
+
+  const resolveRequestOrigin = (req) => {
+    if (!req || !req.get) {
+      return null;
+    }
+
+    const host = req.get("host");
+    if (!host) {
+      return null;
+    }
+
+    const forwardedProto = req.get("x-forwarded-proto");
+    const protocol = (forwardedProto ? forwardedProto.split(",")[0] : req.protocol) || "http";
+    return `${protocol.trim()}://${host}`;
+  };
+
+  const resolveFrontendUrl = (req) => {
+    const referer = req?.get ? req.get("referer") : null;
+    if (referer) {
+      try {
+        const refererOrigin = normalizeUrl(new URL(referer).origin);
+        if (refererOrigin) {
+          return refererOrigin;
+        }
+      } catch (_error) {
+        // Ignore invalid referrer and use configured fallback.
+      }
+    }
+
+    if (config.isDevelopment) {
+      const configuredDev =
+        normalizeUrl(process.env.NEXT_PUBLIC_FRONTEND_URL) ||
+        normalizeUrl(process.env.FRONTEND_URL);
+
+      if (configuredDev && !configuredDev.includes("onrender.com")) {
+        return configuredDev;
+      }
+
+      const requestOrigin = normalizeUrl(resolveRequestOrigin(req));
+      if (requestOrigin && requestOrigin.includes("onrender.com")) {
+        return requestOrigin;
+      }
+
+      return "http://localhost:3000";
+    }
+
+    const configured = normalizeUrl(
+      process.env.FRONTEND_URL ||
+        process.env.NEXT_PUBLIC_FRONTEND_URL ||
+        config.frontendUrl ||
+        "http://localhost:3000",
+    );
+
+    // If frontend URL is accidentally pointed to the backend host,
+    // default to local frontend in development to avoid redirect loops.
+    if (req && req.get) {
+      const requestOrigin = `${req.protocol}://${req.get("host")}`;
+      if (configured === requestOrigin) {
+        const productionFrontend = process.env.PRODUCTION_FRONTEND_URL;
+        if (productionFrontend && productionFrontend !== requestOrigin) {
+          return productionFrontend;
+        }
+        return config.isDevelopment ? "http://localhost:3000" : configured;
+      }
+    }
+
+    return configured || "http://localhost:3000";
+  };
 
   // Trust proxy - CRITICAL for Render/HTTPS deployment
   // Without this, sessions won't work behind a proxy
@@ -159,6 +241,15 @@ const startServer = async () => {
     res.status(200).send("LUMINEX is running");
   });
 
+  // Fallback redirect for accidental backend hits to frontend dashboard paths.
+  // This protects OAuth redirects when FRONTEND_URL is misconfigured.
+  app.get("/dashboard*", (req, res) => {
+    const frontendUrl = resolveFrontendUrl(req).replace(/\/+$/, "");
+    const queryIndex = req.originalUrl.indexOf("?");
+    const query = queryIndex >= 0 ? req.originalUrl.slice(queryIndex) : "";
+    return res.redirect(`${frontendUrl}${req.path}${query}`);
+  });
+
   // Privacy Policy endpoint
   app.get("/privacy", (req, res) => {
     res.send(
@@ -198,9 +289,10 @@ const startServer = async () => {
 
     app.get(
       "/auth/facebook/callback",
-      passport.authenticate("facebook", {
-        failureRedirect: process.env.FRONTEND_URL + "/login?error=facebook_auth_failed",
-      }),
+      (req, res, next) => {
+        const failureRedirect = `${resolveFrontendUrl(req)}/login?error=facebook_auth_failed`;
+        return passport.authenticate("facebook", { failureRedirect })(req, res, next);
+      },
       (req, res) => {
         // Successful authentication
         // Generate JWT token for the authenticated user
@@ -219,8 +311,10 @@ const startServer = async () => {
           maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
 
-        // Redirect to frontend dashboard
-        res.redirect(process.env.FRONTEND_URL + "/dashboard");
+        // Redirect to frontend dashboard with token in URL (for localStorage backup)
+        const frontendUrl = resolveFrontendUrl(req);
+        const userName = req.user.firstName || 'User';
+        res.redirect(`${frontendUrl}/dashboard?fbauth=success&token=${encodeURIComponent(token)}&user=${encodeURIComponent(userName)}`);
       },
     );
   } else {

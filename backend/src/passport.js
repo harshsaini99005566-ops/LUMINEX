@@ -32,7 +32,10 @@ if (!hasValidCredentials) {
       {
         clientID: FACEBOOK_CLIENT_ID,
         clientSecret: FACEBOOK_CLIENT_SECRET,
-        callbackURL: process.env.FACEBOOK_REDIRECT_URI || process.env.FACEBOOK_CALLBACK_URL || "https://luminex-bwjm.onrender.com/api/auth/facebook/callback",
+        callbackURL:
+          process.env.FACEBOOK_REDIRECT_URI ||
+          process.env.FACEBOOK_CALLBACK_URL ||
+          "http://localhost:5001/api/auth/facebook/callback",
         profileFields: ["id", "emails", "name"],
         enableProof: true // Adds extra security
       },

@@ -11,6 +11,123 @@ const InstagramAccount = require('../models/InstagramAccount');
 
 const router = express.Router();
 
+const normalizeUrl = (value) => {
+  if (!value || typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return trimmed.replace(/\/+$/, '');
+};
+
+const parseStatePayload = (stateParam) => {
+  if (!stateParam || typeof stateParam !== 'string') {
+    return null;
+  }
+
+  try {
+    const json = Buffer.from(stateParam, 'base64url').toString('utf8');
+    const parsed = JSON.parse(json);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (_error) {
+    return null;
+  }
+};
+
+const buildStatePayload = (payload) => {
+  try {
+    return Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+  } catch (_error) {
+    return undefined;
+  }
+};
+
+const resolveRequestOrigin = (req) => {
+  if (!req || !req.get) {
+    return null;
+  }
+
+  const host = req.get('host');
+  if (!host) {
+    return null;
+  }
+
+  const forwardedProto = req.get('x-forwarded-proto');
+  const protocol = (forwardedProto ? forwardedProto.split(',')[0] : req.protocol) || 'http';
+  return `${protocol.trim()}://${host}`;
+};
+
+const resolveFrontendUrl = (req) => {
+  const state = parseStatePayload(req?.query?.state);
+  const stateFrontend = normalizeUrl(state?.frontendUrl);
+  if (stateFrontend) {
+    return stateFrontend;
+  }
+
+  const referer = req?.get ? req.get('referer') : null;
+  if (referer) {
+    try {
+      const refererOrigin = normalizeUrl(new URL(referer).origin);
+      if (refererOrigin) {
+        return refererOrigin;
+      }
+    } catch (_error) {
+      // Ignore invalid referrer and fallback to configured values.
+    }
+  }
+
+  if (config.isDevelopment) {
+    const configuredDev =
+      normalizeUrl(process.env.NEXT_PUBLIC_FRONTEND_URL) ||
+      normalizeUrl(process.env.FRONTEND_URL);
+
+    if (configuredDev && !configuredDev.includes('onrender.com')) {
+      return configuredDev;
+    }
+
+    const requestOrigin = normalizeUrl(resolveRequestOrigin(req));
+    if (requestOrigin && requestOrigin.includes('onrender.com')) {
+      return requestOrigin;
+    }
+
+    return 'http://localhost:3000';
+  }
+
+  const configured = normalizeUrl(
+    process.env.FRONTEND_URL ||
+      process.env.NEXT_PUBLIC_FRONTEND_URL ||
+      process.env.PRODUCTION_FRONTEND_URL ||
+      config.frontendUrl ||
+      'http://localhost:3000',
+  );
+
+  if (req && req.get) {
+    const requestOrigin = `${req.protocol}://${req.get('host')}`;
+    if (configured === requestOrigin && config.isDevelopment) {
+      return 'http://localhost:3000';
+    }
+  }
+
+  return configured || 'http://localhost:3000';
+};
+
+const resolveFacebookRedirectUri = (req) => {
+  const requestOrigin = normalizeUrl(resolveRequestOrigin(req));
+  if (requestOrigin) {
+    return `${requestOrigin}/api/auth/facebook/callback`;
+  }
+
+  const configured = normalizeUrl(
+    process.env.FACEBOOK_REDIRECT_URI || process.env.FACEBOOK_CALLBACK_URL,
+  );
+
+  return configured || 'http://localhost:5001/api/auth/facebook/callback';
+};
+
 /**
  * Signup new user (primary endpoint)
  */
@@ -424,7 +541,6 @@ router.get('/instagram/callback', authenticate, async (req, res) => {
  */
 const FACEBOOK_CLIENT_ID = process.env.FACEBOOK_CLIENT_ID;
 const FACEBOOK_CLIENT_SECRET = process.env.FACEBOOK_CLIENT_SECRET;
-const FACEBOOK_REDIRECT_URI = process.env.FACEBOOK_REDIRECT_URI || process.env.FACEBOOK_CALLBACK_URL;
 
 /**
  * Facebook OAuth: Redirect to Meta login
@@ -435,7 +551,8 @@ const FACEBOOK_REDIRECT_URI = process.env.FACEBOOK_REDIRECT_URI || process.env.F
  * - pages_messaging: Send and receive messages on behalf of pages
  */
 router.get('/facebook', (req, res) => {
-  const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const FRONTEND_URL = resolveFrontendUrl(req);
+  const FACEBOOK_REDIRECT_URI = resolveFacebookRedirectUri(req);
   
   // Check if credentials exist and are not placeholders
   const hasValidCredentials = FACEBOOK_CLIENT_ID && 
@@ -464,7 +581,9 @@ router.get('/facebook', (req, res) => {
     'instagram_manage_comments'
   ].join(',');
   
-  const fbAuthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(FACEBOOK_REDIRECT_URI)}&scope=${scopes}&response_type=code`;
+  const state = buildStatePayload({ frontendUrl: FRONTEND_URL });
+  const stateParam = state ? `&state=${encodeURIComponent(state)}` : '';
+  const fbAuthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(FACEBOOK_REDIRECT_URI)}&scope=${scopes}&response_type=code${stateParam}`;
   logger.info(`[Facebook OAuth] Redirecting to: ${fbAuthUrl}`);
   res.redirect(fbAuthUrl);
 });
@@ -475,7 +594,8 @@ router.get('/facebook', (req, res) => {
  */
 router.get('/facebook/callback', async (req, res) => {
   const { code, error, error_description } = req.query;
-  const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const FRONTEND_URL = resolveFrontendUrl(req);
+  const FACEBOOK_REDIRECT_URI = resolveFacebookRedirectUri(req);
   
   if (error) {
     logger.warn('[Facebook OAuth] User denied permission or error occurred:', error_description);
@@ -626,7 +746,7 @@ router.get('/facebook/callback', async (req, res) => {
     if (err.response?.data) {
       logger.error('[Facebook OAuth] Error details:', err.response.data);
     }
-    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const FRONTEND_URL = resolveFrontendUrl(req);
     return res.redirect(`${FRONTEND_URL}/dashboard/accounts?error=${encodeURIComponent('Facebook login failed: ' + err.message)}`);
   }
 });

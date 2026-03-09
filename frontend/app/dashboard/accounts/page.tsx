@@ -171,9 +171,14 @@ export default function AccountsPage() {
             <h1 className="text-3xl font-bold text-cyber-primary font-mono">INSTAGRAM ACCOUNTS</h1>
             <p className="text-sm text-cyber-text/60">Manage connected accounts</p>
           </div>
-          <Link href="/dashboard">
-            <CyberButton variant="ghost">← Back</CyberButton>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/accounts-manager">
+              <CyberButton variant="secondary">Account Manager</CyberButton>
+            </Link>
+            <Link href="/dashboard">
+              <CyberButton variant="ghost">← Back</CyberButton>
+            </Link>
+          </div>
         </div>
       </header>
 

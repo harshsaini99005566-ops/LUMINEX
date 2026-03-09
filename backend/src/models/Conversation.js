@@ -1,15 +1,15 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const conversationSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     account: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'InstagramAccount',
+      ref: "InstagramAccount",
       required: true,
     },
     conversationId: {
@@ -51,19 +51,20 @@ const conversationSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    lastMessage: String,
     overallSentiment: {
       type: String,
-      enum: ['positive', 'neutral', 'negative'],
-      default: 'neutral',
+      enum: ["positive", "neutral", "negative"],
+      default: "neutral",
     },
     tags: [String],
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 conversationSchema.index({ user: 1, account: 1, updatedAt: -1 });
 conversationSchema.index({ user: 1 });
 
-module.exports = mongoose.model('Conversation', conversationSchema);
+module.exports = mongoose.model("Conversation", conversationSchema);

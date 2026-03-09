@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { LogOut, LayoutDashboard, Zap, MessageCircle, Settings, BarChart3, ChevronDown as _ChevronDown } from 'lucide-react' 
+import { LogOut, LayoutDashboard, Zap, MessageCircle, Settings, FlaskConical, ChevronDown as _ChevronDown } from 'lucide-react' 
 import AuthGuard from '../../components/AuthGuard'
 import { useState, useEffect } from 'react'
 
@@ -26,9 +26,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/dashboard/inbox', label: 'Inbox', icon: MessageCircle },
+    { href: '/dashboard/dm-reply', label: 'Inbox', icon: MessageCircle },
     { href: '/dashboard/rules', label: 'Automations', icon: Zap },
-    { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+    { href: '/dashboard/accounts-manager', label: 'Account Manager', icon: FlaskConical },
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   ]
 

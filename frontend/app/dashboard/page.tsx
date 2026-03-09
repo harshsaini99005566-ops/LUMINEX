@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  BarChart3,
   Users,
   Zap,
   TrendingUp,
@@ -307,37 +306,6 @@ export default function Dashboard() {
     );
   }
 
-  const stats = [
-    {
-      label: "Messages This Month",
-      value: user.usage.messagesThisMonth,
-      icon: Users,
-      color: "from-brand-primary to-brand-primary-dark",
-      bgColor: "bg-brand-primary-50",
-    },
-    {
-      label: "Automation Rules",
-      value: `${user.usage.rulesUsed}/${user.limits.automationRules}`,
-      icon: Zap,
-      color: "from-brand-accent to-brand-accent-dark",
-      bgColor: "bg-brand-accent-50",
-    },
-    {
-      label: "AI Replies Used",
-      value: user.usage.aiRepliesUsed,
-      icon: BarChart3,
-      color: "from-brand-secondary to-brand-secondary-dark",
-      bgColor: "bg-brand-secondary-50",
-    },
-    {
-      label: "Current Plan",
-      value: user.plan.charAt(0).toUpperCase() + user.plan.slice(1),
-      icon: TrendingUp,
-      color: "from-brand-primary to-brand-secondary",
-      bgColor: "bg-brand-primary-50",
-    },
-  ];
-
   return (
     <div className="p-8 max-w-7xl mx-auto">
       {/* Header */}
@@ -348,43 +316,6 @@ export default function Dashboard() {
         <p className="text-lg text-brand-text-secondary">
           Here's what's happening with your automations today.
         </p>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, i) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={i}
-              className={`card-elevated ${stat.bgColor} border-none group hover:shadow-lg`}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-brand-text-secondary mb-1">
-                    {stat.label}
-                  </p>
-                  <p
-                    className={`text-3xl font-heading font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}
-                  >
-                    {stat.value}
-                  </p>
-                </div>
-                <div
-                  className={`w-12 h-12 rounded-lg bg-gradient-to-br ${stat.color} opacity-20 group-hover:opacity-30 transition-opacity flex items-center justify-center`}
-                >
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-              </div>
-              <div className="h-1 bg-brand-border rounded-full overflow-hidden">
-                <div
-                  className={`h-full bg-gradient-to-r ${stat.color}`}
-                  style={{ width: "60%" }}
-                />
-              </div>
-            </div>
-          );
-        })}
       </div>
 
       {/* Quick Actions & Info */}
@@ -400,7 +331,7 @@ export default function Dashboard() {
                 Get started fast
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <Link href="/dashboard/accounts">
                 <button className="btn-primary w-full h-24 flex flex-col items-center justify-center gap-2 group hover:shadow-primary hover:scale-105 active:scale-95">
                   <Plus className="w-6 h-6" />
@@ -417,6 +348,12 @@ export default function Dashboard() {
                 <button className="btn-secondary w-full h-24 flex flex-col items-center justify-center gap-2 group hover:scale-105 active:scale-95">
                   <Users className="w-6 h-6" />
                   <span className="text-sm font-semibold">View Inbox</span>
+                </button>
+              </Link>
+              <Link href="/dashboard/dm-reply">
+                <button className="btn-secondary w-full h-24 flex flex-col items-center justify-center gap-2 group hover:scale-105 active:scale-95">
+                  <Users className="w-6 h-6" />
+                  <span className="text-sm font-semibold">DM Reply Flow</span>
                 </button>
               </Link>
               <Link href="/dashboard/billing">
@@ -454,6 +391,83 @@ export default function Dashboard() {
               </button>
             </Link>
           )}
+        </div>
+      </div>
+
+      {/* Instagram Profile */}
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1">
+          <div className="card-elevated border-none">
+            <div className="text-center mb-6">
+              <img 
+                src="/luminex-logo.png" 
+                alt="luminex_labs" 
+                className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-brand-primary-50"
+              />
+              <h3 className="text-xl font-heading font-bold text-brand-text">
+                Luminex Labs
+              </h3>
+              <p className="text-sm text-brand-primary font-semibold">@luminex_labs</p>
+              <p className="text-xs text-brand-text-secondary mt-1">Instagram Business Account</p>
+            </div>
+            
+            <div className="space-y-3 pb-6 border-b border-brand-border">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-brand-text-secondary">Followers</span>
+                <span className="font-bold text-brand-text text-lg">18,420</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-brand-text-secondary">Posts</span>
+                <span className="font-bold text-brand-text text-lg">312</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-brand-text-secondary">Connected Since</span>
+                <span className="text-sm text-brand-text font-medium">Feb 10, 2026</span>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-4">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-xs font-semibold text-green-600">CONNECTED</span>
+              </div>
+              <Link href="/dashboard/accounts-manager/instagram">
+                <button className="btn-primary w-full py-2.5">
+                  Manage Account
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="card-elevated border-none">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-heading font-bold text-brand-text">
+                Account Quick Stats
+              </h3>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-lg bg-brand-light-2 border border-brand-border">
+                <p className="text-sm text-brand-text-secondary mb-2">Engagement Rate</p>
+                <p className="text-2xl font-bold text-brand-primary">8.5%</p>
+              </div>
+              <div className="p-4 rounded-lg bg-brand-light-2 border border-brand-border">
+                <p className="text-sm text-brand-text-secondary mb-2">Avg. Likes/Post</p>
+                <p className="text-2xl font-bold text-brand-secondary">1,485</p>
+              </div>
+              <div className="p-4 rounded-lg bg-brand-light-2 border border-brand-border">
+                <p className="text-sm text-brand-text-secondary mb-2">Avg. Comments/Post</p>
+                <p className="text-2xl font-bold text-brand-accent">127</p>
+              </div>
+              <div className="p-4 rounded-lg bg-brand-light-2 border border-brand-border">
+                <p className="text-sm text-brand-text-secondary mb-2">Followers Growth</p>
+                <p className="text-2xl font-bold text-green-600">+2.3%</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
