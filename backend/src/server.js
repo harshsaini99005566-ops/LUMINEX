@@ -1,15 +1,11 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
 const compression = require("compression");
 const session = require("express-session");
 const dotenv = require("dotenv");
 const path = require("path");
-// Load backend-local environment file for development/runtime consistency.
-dotenv.config({ path: path.join(__dirname, "../.env") });
+dotenv.config({ path: path.join(__dirname, '../.env') });
 console.log("IG APP ID:", process.env.INSTAGRAM_APP_ID);
-console.log("FB Client ID:", process.env.FACEBOOK_CLIENT_ID);
-
 const { connectDB, getDBStatus } = require("../config/database");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 const { authLimiter, apiLimiter } = require("./middleware/rateLimiter");
@@ -44,91 +40,6 @@ const startServer = async () => {
 
   // Step 2: Create Express app
   const app = express();
-
-  const normalizeUrl = (value) => {
-    if (!value || typeof value !== "string") {
-      return null;
-    }
-
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return null;
-    }
-
-    return trimmed.replace(/\/+$/, "");
-  };
-
-  const resolveRequestOrigin = (req) => {
-    if (!req || !req.get) {
-      return null;
-    }
-
-    const host = req.get("host");
-    if (!host) {
-      return null;
-    }
-
-    const forwardedProto = req.get("x-forwarded-proto");
-    const protocol = (forwardedProto ? forwardedProto.split(",")[0] : req.protocol) || "http";
-    return `${protocol.trim()}://${host}`;
-  };
-
-  const resolveFrontendUrl = (req) => {
-    const referer = req?.get ? req.get("referer") : null;
-    if (referer) {
-      try {
-        const refererOrigin = normalizeUrl(new URL(referer).origin);
-        if (refererOrigin) {
-          return refererOrigin;
-        }
-      } catch (_error) {
-        // Ignore invalid referrer and use configured fallback.
-      }
-    }
-
-    if (config.isDevelopment) {
-      const configuredDev =
-        normalizeUrl(process.env.NEXT_PUBLIC_FRONTEND_URL) ||
-        normalizeUrl(process.env.FRONTEND_URL);
-
-      if (configuredDev && !configuredDev.includes("onrender.com")) {
-        return configuredDev;
-      }
-
-      const requestOrigin = normalizeUrl(resolveRequestOrigin(req));
-      if (requestOrigin && requestOrigin.includes("onrender.com")) {
-        return requestOrigin;
-      }
-
-      return "http://localhost:3000";
-    }
-
-    const configured = normalizeUrl(
-      process.env.FRONTEND_URL ||
-        process.env.NEXT_PUBLIC_FRONTEND_URL ||
-        config.frontendUrl ||
-        "http://localhost:3000",
-    );
-
-    // If frontend URL is accidentally pointed to the backend host,
-    // default to local frontend in development to avoid redirect loops.
-    if (req && req.get) {
-      const requestOrigin = `${req.protocol}://${req.get("host")}`;
-      if (configured === requestOrigin) {
-        const productionFrontend = process.env.PRODUCTION_FRONTEND_URL;
-        if (productionFrontend && productionFrontend !== requestOrigin) {
-          return productionFrontend;
-        }
-        return config.isDevelopment ? "http://localhost:3000" : configured;
-      }
-    }
-
-    return configured || "http://localhost:3000";
-  };
-
-  // Trust proxy - CRITICAL for Render/HTTPS deployment
-  // Without this, sessions won't work behind a proxy
-  app.set('trust proxy', 1);
 
   // Step 3: Security and compression middleware (before routes)
   // Apply security headers using helmet
@@ -170,58 +81,7 @@ const startServer = async () => {
   app.use(sanitizeInput);
   app.use(requestLogger);
 
-  // Serve uploaded files
-  app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
-  // Step 5.5: Session and Passport Configuration
-  // CRITICAL: This must come AFTER body parsing and BEFORE routes
-  const passport = require('passport');
-  const { MongoStore } = require('connect-mongo');
-  
-  app.use(session({
-    secret: process.env.SESSION_SECRET || 'fallback-secret-change-in-production',
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
-      ttl: 7 * 24 * 60 * 60, // 7 days
-    }),
-    cookie: {
-      secure: process.env.NODE_ENV === 'production', // true in production (HTTPS only)
-      httpOnly: true, // Prevents XSS attacks
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-site OAuth in production
-      domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
-    },
-    proxy: true // Trust the reverse proxy
-  }));
-
-  // Initialize Passport
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  logger.info('✅ Session and Passport middleware initialized');
-
   // Step 6: Setup routes
-
-  const renderPage = (title, bodyHtml) => `
-    <!doctype html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>${title}</title>
-        <style>
-          body { font-family: Arial, sans-serif; color: #111; margin: 40px; line-height: 1.6; }
-          h1 { margin-bottom: 12px; }
-          p { margin: 8px 0; }
-        </style>
-      </head>
-      <body>
-        ${bodyHtml}
-      </body>
-    </html>
-  `;
 
   // Health check endpoint - includes DB status
   app.get("/health", (req, res) => {
@@ -236,85 +96,35 @@ const startServer = async () => {
     });
   });
 
-  // Root endpoint - Homepage (Meta verification checks this)
+  // Root endpoint - Homepage
   app.get("/", (req, res) => {
-    res.status(200).send("LUMINEX is running");
-  });
-
-  // Fallback redirect for accidental backend hits to frontend dashboard paths.
-  // This protects OAuth redirects when FRONTEND_URL is misconfigured.
-  app.get("/dashboard*", (req, res) => {
-    const frontendUrl = resolveFrontendUrl(req).replace(/\/+$/, "");
-    const queryIndex = req.originalUrl.indexOf("?");
-    const query = queryIndex >= 0 ? req.originalUrl.slice(queryIndex) : "";
-    return res.redirect(`${frontendUrl}${req.path}${query}`);
+    res.send("<h1>LUMINEX Home</h1><p>Instagram Automation Platform</p>");
   });
 
   // Privacy Policy endpoint
   app.get("/privacy", (req, res) => {
-    res.send(
-      renderPage(
-        "LUMINEX Privacy Policy",
-        `
-          <h1>LUMINEX Privacy Policy</h1>
-          <p>We only use data for Meta integrations.</p>
-          <p>We do not sell, share, or misuse user data.</p>
-          <p>All data is used strictly for automation services requested by the user.</p>
-        `,
-      ),
-    );
+    res.send("<h2>Privacy Policy</h2><p>Your privacy details here.</p>");
   });
 
   // Terms of Service endpoint
   app.get("/terms", (req, res) => {
-    res.send(
-      renderPage(
-        "LUMINEX Terms of Service",
-        `
-          <h1>LUMINEX Terms of Service</h1>
-          <p>By using LUMINEX, you agree to use the service lawfully and only for authorized automation.</p>
-          <p>You are responsible for the content you connect and any actions taken through your account.</p>
-          <p>Service availability and features may change over time.</p>
-        `,
-      ),
-    );
+    res.send("<h2>Terms of Service</h2><p>Your terms here.</p>");
   });
 
   // Facebook OAuth routes (direct routes, no /api prefix) - only if credentials are available
-  if (process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET) {
+  if (process.env.FB_APP_ID && process.env.FB_APP_SECRET) {
     app.get(
       "/auth/facebook",
-      passport.authenticate("facebook", { scope: ["email"] }),
+      require("passport").authenticate("facebook", { scope: ["email"] }),
     );
 
     app.get(
       "/auth/facebook/callback",
-      (req, res, next) => {
-        const failureRedirect = `${resolveFrontendUrl(req)}/login?error=facebook_auth_failed`;
-        return passport.authenticate("facebook", { failureRedirect })(req, res, next);
-      },
+      require("passport").authenticate("facebook", {
+        failureRedirect: "/login",
+      }),
       (req, res) => {
-        // Successful authentication
-        // Generate JWT token for the authenticated user
-        const jwt = require('jsonwebtoken');
-        const token = jwt.sign(
-          { id: req.user._id, email: req.user.email },
-          config.jwtSecret,
-          { expiresIn: config.jwtExpiry }
-        );
-
-        // Set the token as a cookie
-        res.cookie('token', token, {
-          httpOnly: true,
-          secure: config.nodeEnv === 'production',
-          sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
-
-        // Redirect to frontend dashboard with token in URL (for localStorage backup)
-        const frontendUrl = resolveFrontendUrl(req);
-        const userName = req.user.firstName || 'User';
-        res.redirect(`${frontendUrl}/dashboard?fbauth=success&token=${encodeURIComponent(token)}&user=${encodeURIComponent(userName)}`);
+        res.send("Facebook Login Success");
       },
     );
   } else {
@@ -327,48 +137,10 @@ const startServer = async () => {
     });
   }
 
-  // Test route to check if user session is working
-  app.get("/check", (req, res) => {
-    if (req.user) {
-      res.json({
-        authenticated: true,
-        user: {
-          id: req.user._id,
-          email: req.user.email,
-          firstName: req.user.firstName,
-          lastName: req.user.lastName,
-          plan: req.user.plan
-        },
-        message: "✅ Session working - User authenticated"
-      });
-    } else {
-      res.json({
-        authenticated: false,
-        user: null,
-        message: "❌ Session not saved - User not authenticated"
-      });
-    }
-  });
-
   // API Routes with /api prefix (apply rate limiting)
   try {
-    // Conditional rate limiter for auth routes (skip OAuth callbacks)
-    const conditionalAuthLimiter = (req, res, next) => {
-      // Skip rate limiting for OAuth callback endpoints
-      const oauthPaths = ['/facebook', '/facebook/callback', '/instagram', '/instagram/callback'];
-      const isOAuthPath = oauthPaths.some(path => req.path.startsWith(path));
-      
-      if (isOAuthPath) {
-        // Skip rate limiting for OAuth flows
-        return next();
-      }
-      
-      // Apply rate limiting for other auth endpoints
-      return authLimiter(req, res, next);
-    };
-
-    // Auth routes (stricter rate limiting, except OAuth)
-    app.use("/api/auth", conditionalAuthLimiter, require("./routes/auth"));
+    // Auth routes (stricter rate limiting)
+    app.use("/api/auth", authLimiter, require("./routes/auth"));
 
     // Main API routes (moderate rate limiting)
     app.use("/api/instagram", apiLimiter, require("./routes/instagram"));
@@ -383,7 +155,6 @@ const startServer = async () => {
     );
     app.use("/api/billing", apiLimiter, require("./routes/billing"));
     app.use("/api/analytics", apiLimiter, require("./routes/analytics"));
-    app.use("/api/posts", apiLimiter, require("./routes/posts"));
 
     // Webhook routes (no rate limiting for Stripe/Instagram webhooks)
     app.use("/webhooks", require("./routes/webhooks"));
@@ -403,9 +174,7 @@ const startServer = async () => {
   try {
     require("./jobs/resetMonthlyUsage");
     require("./jobs/refreshInstagramTokens");
-    const { startScheduler } = require("./jobs/postScheduler");
-    startScheduler();
-    logger.info("✅ Scheduled jobs started (usage reset, token refresh, post scheduler)");
+    logger.info("✅ Scheduled jobs started (usage reset, token refresh)");
   } catch (jobError) {
     logger.warn("Scheduled jobs not available", { error: jobError.message });
   }

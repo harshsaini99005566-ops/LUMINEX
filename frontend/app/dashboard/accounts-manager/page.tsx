@@ -29,9 +29,15 @@ type TabKey = "comments" | "posts" | "dms" | "analytics";
 type CommentItem = {
   id: string;
   user: string;
+  avatar?: string;
   text: string;
+  postId: string;
   time: string;
   status: "Open" | "Replied";
+  // Optional fields for UI convenience
+  title?: string;
+  image?: string;
+  reach?: string;
 };
 
 type DmItem = {
@@ -47,172 +53,75 @@ type PostItem = {
   likes: number;
   comments: number;
   reach: string;
+  image?: string;
 };
 
 export default function AccountsManagerPage() {
+  // --- All state at the top ---
+  // State
   const [activeTab, setActiveTab] = useState<TabKey>("comments");
-  const [commentReply, setCommentReply] = useState(
-    "Thanks for your comment! Please check your DM for details.",
-  );
-  const [dmReply, setDmReply] = useState(
-    "Hi! Thanks for reaching out. I can help you with pricing and delivery details.",
-  );
-  const [postCaption, setPostCaption] = useState(
-    "Launching something exciting this week. Stay tuned! 🚀",
-  );
-  const [isAutoReplyEnabled, setIsAutoReplyEnabled] = useState(true);
-  const [isCommentFilterEnabled, setIsCommentFilterEnabled] = useState(true);
-  const [isDmRoutingEnabled, setIsDmRoutingEnabled] = useState(false);
-  const [actionMessage, setActionMessage] = useState("All systems operational");
-
-  // Automation features
-  const [autoCommentEnabled, setAutoCommentEnabled] = useState(false);
-  const [autoDmEnabled, setAutoDmEnabled] = useState(false);
-  const [autoPostEnabled, setAutoPostEnabled] = useState(false);
-  const [autoPostSchedule, setAutoPostSchedule] = useState("daily");
-
-  // Interactive post creation workflow states
-  const [currentPostStep, setCurrentPostStep] = useState(1);
-  const [uploadedImage, setUploadedImage] = useState("");
-  const [newPostCaption, setNewPostCaption] = useState(
-    "Launching something exciting this week. Stay tuned! 🚀",
-  );
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [showPublishedPost, setShowPublishedPost] = useState(false);
-
-  // Complete post upload features
-  const [uploadedPostImages, setUploadedPostImages] = useState<string[]>([]);
-  const [isUploadingPost, setIsUploadingPost] = useState(false);
-  const [uploadPostProgress, setUploadPostProgress] = useState(0);
-  const [showPostUploadSection, setShowPostUploadSection] = useState(false);
-  const [postScheduleDate, setPostScheduleDate] = useState("");
-  const [postScheduleTime, setPostScheduleTime] = useState("");
-  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
-  const [postVisibility, setPostVisibility] = useState<
-    "public" | "private" | "friends"
-  >("public");
-
-  // Live analytics (auto-updates every few seconds)
-  const [liveFollowersToday, setLiveFollowersToday] = useState(128);
-  const [liveCommentsReceived, setLiveCommentsReceived] = useState(356);
-  const [liveAvgReplyTime, setLiveAvgReplyTime] = useState(3.2);
-  const [liveTrendPoints, setLiveTrendPoints] = useState([
-    18, 16, 13, 15, 10, 8, 11, 6,
-  ]);
-  const [liveTick, setLiveTick] = useState(0);
-  const [selectedDayRange, setSelectedDayRange] = useState<7 | 14 | 30>(7);
-
-  // Track previous values for percentage calculations
-  const [prevFollowers, setPrevFollowers] = useState(128);
-  const [prevComments, setPrevComments] = useState(356);
-  const [prevAvgReplyTime, setPrevAvgReplyTime] = useState(3.2);
-
-  // Calculate percentage changes
-  const followersChange =
-    prevFollowers > 0
-      ? (((liveFollowersToday - prevFollowers) / prevFollowers) * 100).toFixed(
-          1,
-        )
-      : "0";
-  const commentsChange =
-    prevComments > 0
-      ? (((liveCommentsReceived - prevComments) / prevComments) * 100).toFixed(
-          1,
-        )
-      : "0";
-  const replyTimeChange =
-    prevAvgReplyTime > 0
-      ? (
-          ((prevAvgReplyTime - liveAvgReplyTime) / prevAvgReplyTime) *
-          100
-        ).toFixed(1)
-      : "0";
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveTick((prev) => {
-        const newTick = prev + 1;
-
-        // Update previous values every 10 ticks for percentage calculations
-        if (newTick % 10 === 0) {
-          setPrevFollowers(liveFollowersToday);
-          setPrevComments(liveCommentsReceived);
-          setPrevAvgReplyTime(liveAvgReplyTime);
-        }
-
-        return newTick;
-      });
-
-      setLiveFollowersToday((prev) => prev + Math.floor(Math.random() * 4));
-      setLiveCommentsReceived((prev) => prev + Math.floor(Math.random() * 3));
-      setLiveAvgReplyTime((prev) => {
-        const delta = (Math.random() - 0.55) * 0.18;
-        const next = Math.max(2.1, Math.min(4.5, prev + delta));
-        return Number(next.toFixed(1));
-      });
-
-      setLiveTrendPoints((prev) => {
-        const last = prev[prev.length - 1];
-        const change = Math.floor(Math.random() * 5) - 2;
-        const nextVal = Math.max(5, Math.min(22, last + change));
-        return [...prev.slice(1), nextVal];
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [liveFollowersToday, liveCommentsReceived, liveAvgReplyTime]);
-
-  // Generate chart points based on selected day range
-  const chartData = useMemo(() => {
-    let points = liveTrendPoints.slice(0, 8);
-    if (selectedDayRange === 14) {
-      points = liveTrendPoints.concat(
-        Array(7)
-          .fill(0)
-          .map(() => Math.floor(Math.random() * 15) + 5),
-      );
-    } else if (selectedDayRange === 30) {
-      points = liveTrendPoints.concat(
-        Array(23)
-          .fill(0)
-          .map(() => Math.floor(Math.random() * 15) + 5),
-      );
-    }
-    const step = 100 / (points.length - 1);
-    return { points, step };
-  }, [selectedDayRange, liveTrendPoints]);
-
+  const defaultCommentReply = "Thanks for your comment! Please check your DM for details.";
   const [comments, setComments] = useState<CommentItem[]>([
     {
       id: "c1",
-      user: "rahul.design",
-      text: "Price please?",
+      user: "harsh_956",
+      avatar: "/profiles/harsh_956.png",
+      text: "Love this launch post. Excited to see more.",
+      postId: "p1",
       time: "2m ago",
       status: "Open",
     },
     {
       id: "c2",
-      user: "anna.marketing",
-      text: "How to order?",
+      user: "nita_rathore_527",
+      avatar: "C:/Users/DELL/OneDrive/Desktop 111/nita_rathore_527.jpg",
+      text: "Clean start. Looking forward to your next update!",
+      postId: "p1",
       time: "14m ago",
       status: "Replied",
     },
     {
       id: "c3",
-      user: "sara.shop",
-      text: "Available in black?",
-      time: "27m ago",
+      user: "vexora_labs",
+      text: "This setup looks clean. What tools are you using?",
+      postId: "p2",
+      time: "31m ago",
       status: "Open",
     },
-  ]);
-
-  const [dms, setDms] = useState<DmItem[]>([
     {
-      id: "d1",
-      user: "vivek.fit",
-      preview: "Can you share details?",
-      unread: true,
+      id: "c4",
+      user: "vexora_labs",
+      text: "Impressed by the automation features!",
+      postId: "p2",
+      time: "just now",
+      status: "Open",
     },
+    {
+      id: "c7",
+      user: "vexora_labs",
+      text: "How do you handle scaling for multiple accounts?",
+      postId: "p2",
+      time: "moments ago",
+      status: "Open",
+    },
+    {
+      id: "c5",
+      user: "vexora_labs",
+      text: "Congrats on the milestone post!",
+      postId: "p3",
+      time: "1h ago",
+      status: "Open",
+    },
+    {
+      id: "c6",
+      user: "vexora_labs",
+      text: "Small account but strong start. Keep going!",
+      postId: "p3",
+      time: "1h ago",
+      status: "Replied",
+    },
+  ]);
+  const [dms, setDms] = useState<DmItem[]>([
     {
       id: "d2",
       user: "jenny.store",
@@ -226,40 +135,94 @@ export default function AccountsManagerPage() {
       unread: true,
     },
   ]);
+  const [postScheduleTime, setPostScheduleTime] = useState<string>("");
+  const [postId, setPostId] = useState<string>("p1");
+  const [postTitle, setPostTitle] = useState<string>("Sample Post Title");
+  const [showPostUploadSection, setShowPostUploadSection] = useState<boolean>(false);
+  const [postScheduleDate, setPostScheduleDate] = useState<string>("");
+  const [selectedCommentPostId, setSelectedCommentPostId] = useState<string | null>(null);
+  const [replyTargetPostId, setReplyTargetPostId] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string>("");
+  const [selectedCommentPost, setSelectedCommentPost] = useState<CommentItem | null>(null);
+  const [autoCommentEnabled, setAutoCommentEnabled] = useState<boolean>(false);
+  const [dmReply, setDmReply] = useState<string>("Thank you for your DM!");
+  const [postCaption, setPostCaption] = useState<string>("");
+  const [posts, setPosts] = useState<PostItem[]>([]);
+  const [autoDmEnabled, setAutoDmEnabled] = useState<boolean>(false);
+  const [isUploadingPost, setIsUploadingPost] = useState<boolean>(false);
+  const [uploadPostProgress, setUploadPostProgress] = useState<number>(0);
+  const [uploadedPostImages, setUploadedPostImages] = useState<string[]>([]);
+  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
+  const [autoPostEnabled, setAutoPostEnabled] = useState(false);
+  const [autoPostSchedule, setAutoPostSchedule] = useState("hourly");
+  const [currentPostStep, setCurrentPostStep] = useState<number>(1);
+  const [uploadedImage, setUploadedImage] = useState<string>("");
+  const [newPostCaption, setNewPostCaption] = useState<string>("");
+  const [showPublishedPost, setShowPublishedPost] = useState<boolean>(false);
 
-  const [posts, setPosts] = useState<PostItem[]>([
-    {
-      id: "p1",
-      title: "New Product Launch",
-      likes: 1240,
-      comments: 89,
-      reach: "23.5K",
-    },
-    {
-      id: "p2",
-      title: "Behind The Scenes",
-      likes: 980,
-      comments: 41,
-      reach: "18.1K",
-    },
-    {
-      id: "p3",
-      title: "Customer Story",
-      likes: 1442,
-      comments: 104,
-      reach: "29.7K",
-    },
-  ]);
-
+  // --- Derived variables and helpers (after state) ---
+    // Additional state for analytics and post visibility
+    const [selectedDayRange, setSelectedDayRange] = useState<number>(7);
+    const [liveFollowersToday, setLiveFollowersToday] = useState<number>(4);
+    const [followersChange, setFollowersChange] = useState<number>(0);
+    const [liveCommentsReceived, setLiveCommentsReceived] = useState<number>(0);
+    const [commentsChange, setCommentsChange] = useState<number>(0);
+    const [liveAvgReplyTime, setLiveAvgReplyTime] = useState<number>(0);
+    const [replyTimeChange, setReplyTimeChange] = useState<number>(0);
+    const [liveTick, setLiveTick] = useState<number>(0);
+    const [chartData, setChartData] = useState<{ points: number[]; step: number }>({ points: [24, 20, 18, 15, 12, 10, 8, 6, 8, 10, 12, 15, 18, 20, 24], step: 7 });
+    const [postVisibility, setPostVisibility] = useState<'public' | 'private' | 'friends'>('public');
+    const [isPublishing, setIsPublishing] = useState<boolean>(false);
+    const [isAutoReplyEnabled, setIsAutoReplyEnabled] = useState<boolean>(false);
   const account = {
-    username: "luminex_labs",
-    displayName: "Luminex Labs",
-    followers: 18420,
-    posts: 312,
-    connectedSince: "2026-02-10",
-    status: "Connected",
-    profilePicture: "/luminex-logo.png",
+    profilePicture: "/default-profile.png",
+    username: "demo_user",
+    displayName: "Demo User",
+    connectedSince: "2023-01-01",
+    followers: 1234,
+    posts: 56,
+    following: 78,
   };
+  const visibleComments = comments;
+  const commentPosts = posts.length > 0 ? posts : [
+    { id: "p1", title: "Demo Post 1", likes: 0, comments: 0, reach: "0", image: "/posts/333.png" },
+    { id: "p2", title: "Demo Post 2", likes: 0, comments: 0, reach: "0", image: "/posts/444.jpg" },
+    { id: "p3", title: "Demo Post 3", likes: 0, comments: 0, reach: "0", image: "/posts/555.jpg" },
+  ];
+  // Helper: get comments for a post
+  function getCommentsForPost(postId: string) {
+    return comments.filter((c) => c.postId === postId);
+  }
+  // Helper: open comments for a post
+  function openCommentsForPost(postId: string, postTitle: string) {
+    setSelectedCommentPostId(postId);
+    setSelectedCommentPost(
+      comments.find((c) => c.postId === postId) || null
+    );
+    runAction(`Opened comments for ${postTitle}`);
+  }
+  // Helper: get reply template for a post
+  function getReplyTemplateForPost(postId: string | null) {
+    // For demo, return a static template
+    return `Thank you for your comment on post ${postId || ''}!`;
+  }
+  function getCommentCountForPost(postId: string) {
+    return comments.filter((c) => c.postId === postId).length;
+  }
+  function aiReplyAllCommentsForPost(postId: string, postTitle: string) {
+    setComments((items) => items.map((item) => item.postId === postId ? { ...item, status: "Replied" } : item));
+    runAction(`AI replied to all comments on ${postTitle}`);
+  }
+  // Ensure selectedCommentPost has the right shape for all usages
+  const selectedCommentPostSafe = selectedCommentPost
+    ? { ...selectedCommentPost, title: (selectedCommentPost as any).title || "Instagram Post", image: (selectedCommentPost as any).image, reach: (selectedCommentPost as any).reach || "0" }
+    : undefined;
+  const selectedReplyTargetPost = { title: "Demo Post" };
+  function updateReplyTemplateForPost(postId: string | null, value: string) {
+    // For demo, this is a stub. In a real app, this would update a template map.
+    runAction(`Reply template updated for post ${postId}`);
+  }
+
 
   const runAction = (message: string) => {
     setActionMessage(`${message} • ${new Date().toLocaleTimeString()}`);
@@ -267,9 +230,16 @@ export default function AccountsManagerPage() {
 
   // Auto-reply to comment
   const autoReplyComment = () => {
-    const openComments = comments.filter((c) => c.status === "Open");
+    const targetPostId = selectedCommentPost?.id;
+    const openComments = comments.filter(
+      (c) => c.status === "Open" && (!targetPostId || c.postId === targetPostId),
+    );
     if (openComments.length === 0) {
-      runAction("No open comments to reply to");
+      runAction(
+        targetPostId
+          ? "No open comments to reply to for the selected auto-reply post"
+          : "No open comments to reply to",
+      );
       return;
     }
 
@@ -280,7 +250,7 @@ export default function AccountsManagerPage() {
       ),
     );
     runAction(
-      `Auto-replied to @${comment.user}: "${commentReply.slice(0, 30)}..."`,
+      `Auto-replied to @${comment.user}: "${getReplyTemplateForPost(comment.postId).slice(0, 30)}..."`,
     );
   };
 
@@ -316,41 +286,38 @@ export default function AccountsManagerPage() {
 
   // Simulate incoming comment
   const simulateIncomingComment = () => {
-    const users = [
-      "tech.guru",
-      "digital.wizard",
-      "brand.master",
-      "social.expert",
-    ];
     const texts = [
       "Interested in this!",
       "Can I get more info?",
       "Love your content!",
       "How much does this cost?",
     ];
-    const randomUser = users[Math.floor(Math.random() * users.length)];
+    const incomingUser = "vexora_labs";
     const randomText = texts[Math.floor(Math.random() * texts.length)];
 
     const newComment: CommentItem = {
       id: `c-${Date.now()}`,
-      user: randomUser,
+      user: incomingUser,
       text: randomText,
+      postId: selectedCommentPost?.id || "p1",
       time: "Just now",
       status: "Open",
     };
 
     setComments((items) => [newComment, ...items]);
-    runAction(`New comment from @${randomUser}`);
+    runAction(`New comment from @${incomingUser}`);
 
     // Auto-reply if enabled
-    if (autoCommentEnabled) {
+    const shouldAutoReply = autoCommentEnabled;
+
+    if (shouldAutoReply) {
       setTimeout(() => {
         setComments((items) =>
           items.map((item) =>
             item.id === newComment.id ? { ...item, status: "Replied" } : item,
           ),
         );
-        runAction(`Auto-replied to @${randomUser}`);
+        runAction(`Auto-replied to @${incomingUser}`);
       }, 1500);
     }
   };
@@ -508,13 +475,13 @@ export default function AccountsManagerPage() {
             ← Back to Accounts
           </Link>
           <h1 className="text-3xl font-heading font-bold text-brand-text mt-2 inline-flex items-center gap-3">
-            Connected Social Accounts
+            Account Manager
             <span className="text-sm px-3 py-1 bg-green-600 text-white rounded-full font-normal">
               LIVE
             </span>
           </h1>
           <p className="text-brand-text-secondary">
-            ✅ Real-time Instagram automation and management platform
+            ✅ Manage posting, comments, and analytics from one account workspace
           </p>
         </div>
         <button
@@ -554,7 +521,8 @@ export default function AccountsManagerPage() {
               className="btn-secondary text-sm px-3 py-2 inline-flex items-center gap-2 relative"
               onClick={() => {
                 if (activeTab === "comments") {
-                  setCommentReply(
+                  updateReplyTemplateForPost(
+                    replyTargetPostId,
                     "Thank you for your comment! Our team will assist you right away. 🙌",
                   );
                 }
@@ -626,8 +594,8 @@ export default function AccountsManagerPage() {
               <p className="font-bold text-brand-text">{account.posts}</p>
             </div>
             <div>
-              <p className="text-xs text-brand-text-secondary">Status</p>
-              <p className="font-bold text-green-600">Active</p>
+              <p className="text-xs text-brand-text-secondary">Following</p>
+              <p className="font-bold text-brand-text">{account.following}</p>
             </div>
           </div>
         </div>
@@ -772,7 +740,7 @@ export default function AccountsManagerPage() {
 
       <div className="border-b border-brand-border">
         <div className="flex gap-4 overflow-x-auto">
-          {(["comments", "posts", "dms", "analytics"] as const).map((tab) => (
+          {(["posts", "comments", "analytics"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -791,13 +759,7 @@ export default function AccountsManagerPage() {
               {tab === "posts" && (
                 <>
                   <ImageIcon className="w-4 h-4 inline mr-2" />
-                  Posts
-                </>
-              )}
-              {tab === "dms" && (
-                <>
-                  <MessageCircle className="w-4 h-4 inline mr-2" />
-                  Auto DM
+                  Posting
                 </>
               )}
               {tab === "analytics" && (
@@ -872,16 +834,20 @@ export default function AccountsManagerPage() {
                 TOTAL COMMENTS
               </p>
               <p className="text-2xl font-bold text-blue-900">
-                {comments.length}
+                {visibleComments.length}
               </p>
-              <p className="text-xs text-blue-600 mt-1">From Instagram posts</p>
+              <p className="text-xs text-blue-600 mt-1">
+                {selectedCommentPost
+                  ? `On ${selectedCommentPost.title}`
+                  : "For selected Instagram post"}
+              </p>
             </div>
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
               <p className="text-xs text-orange-600 font-semibold mb-1">
                 OPEN / PENDING
               </p>
               <p className="text-2xl font-bold text-orange-900">
-                {comments.filter((c) => c.status === "Open").length}
+                {visibleComments.filter((c) => c.status === "Open").length}
               </p>
               <p className="text-xs text-orange-600 mt-1">Awaiting response</p>
             </div>
@@ -890,7 +856,7 @@ export default function AccountsManagerPage() {
                 REPLIED
               </p>
               <p className="text-2xl font-bold text-green-900">
-                {comments.filter((c) => c.status === "Replied").length}
+                {visibleComments.filter((c) => c.status === "Replied").length}
               </p>
               <p className="text-xs text-green-600 mt-1">
                 Successfully handled
@@ -898,15 +864,14 @@ export default function AccountsManagerPage() {
             </div>
           </div>
 
-          <div className="card-elevated border-none p-5 space-y-3 lg:col-span-2">
+          <div className="card-elevated border border-slate-700 bg-slate-900 p-5 space-y-3 lg:col-span-2 text-slate-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="inline-flex items-center gap-2 text-brand-primary font-semibold">
+                <p className="inline-flex items-center gap-2 text-cyan-300 font-semibold">
                   <MessageSquare className="w-4 h-4" /> Instagram Post Comments
                 </p>
-                <p className="text-xs text-brand-text-secondary mt-1">
-                  New comments from your Instagram posts appear here in
-                  real-time
+                <p className="text-xs text-slate-400 mt-1">
+                  Click any post below to view the comments for that post.
                 </p>
               </div>
               <button
@@ -917,20 +882,104 @@ export default function AccountsManagerPage() {
                 Simulate New Comment
               </button>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {commentPosts.slice(0, 3).map((post) => (
+                <button
+                  key={`comment-post-${post.id}`}
+                  onClick={() => setSelectedCommentPostId(post.id)}
+                  className={`rounded-lg border overflow-hidden text-left transition-all ${
+                    selectedCommentPostId === post.id
+                      ? "border-cyan-400 bg-slate-800 shadow-sm"
+                      : "border-slate-700 bg-slate-950 hover:border-cyan-400"
+                  }`}
+                >
+                  <img
+                    src={post.image || "/default-image.png"}
+                    alt={post.title}
+                    className="w-full h-32 object-cover"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "/default-image.png";
+                    }}
+                  />
+                  <div className="p-3">
+                    <p className="text-sm font-semibold text-slate-100 truncate">
+                      {post.title}
+                    </p>
+                    <div className="mt-2 flex items-center gap-4 text-xs text-slate-400">
+                      <span>{getCommentCountForPost(post.id)} comments</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        aiReplyAllCommentsForPost(post.id, post.title);
+                      }}
+                      className="mt-3 w-full rounded-md bg-brand-primary px-2 py-1.5 text-xs font-semibold text-white transition-colors hover:opacity-90"
+                    >
+                      AI Reply Enable
+                    </button>
+                  </div>
+                </button>
+              ))}
+            </div>
+
             <div className="space-y-3">
-              {comments.map((comment, index) => (
+              {selectedCommentPost && (
+                <div className="rounded-lg border border-slate-700 overflow-hidden bg-slate-950">
+                  {selectedCommentPost.image && (
+                    <img
+                      src={selectedCommentPost.image}
+                      alt={selectedCommentPost.title}
+                      className="w-full h-48 object-cover"
+                    />
+                  )}
+                  <div className="px-4 py-3 bg-slate-800 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-100">{selectedCommentPost.title}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {getCommentCountForPost(selectedCommentPost.id)} comments · {selectedCommentPost.reach} reach
+                      </p>
+                    </div>
+                    <span className="text-xs text-slate-300 bg-slate-900 border border-slate-700 px-2 py-1 rounded-full">
+                      Viewing comments
+                    </span>
+                  </div>
+                </div>
+              )}
+              {visibleComments.length === 0 && (
+                <div className="rounded-lg border border-dashed border-slate-700 bg-slate-950 px-4 py-8 text-center">
+                  <p className="text-sm font-semibold text-slate-100">No comments for this post yet</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Select another post or click Simulate New Comment to add one for this post.
+                  </p>
+                </div>
+              )}
+              {visibleComments.map((comment) => (
                 <div
                   key={comment.id}
                   className={`p-3 rounded-lg border ${
                     comment.time === "Just now"
-                      ? "bg-blue-50 border-blue-300 animate-pulse"
-                      : "bg-brand-light-2 border-brand-border"
+                      ? "bg-cyan-950 border-cyan-600 animate-pulse"
+                      : "bg-slate-800 border-slate-700"
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-brand-text">
+                        {comment.avatar ? (
+                          <img
+                            src={comment.avatar}
+                            alt={comment.user}
+                            className="w-6 h-6 rounded-full object-cover border border-brand-border"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold">
+                            {comment.user.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <p className="text-sm font-semibold text-slate-100">
                           @{comment.user}
                         </p>
                         {comment.time === "Just now" && (
@@ -939,43 +988,45 @@ export default function AccountsManagerPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-brand-text-secondary mt-1">
+                      <p className="text-xs text-slate-300 mt-1">
                         {comment.text}
                       </p>
-                      <p className="text-xs text-brand-text-secondary mt-1">
+                      <p className="text-xs text-slate-400 mt-1">
                         📸 Instagram • {comment.time}
                       </p>
                     </div>
                     <span
-                      className={`text-xs px-2 py-1 rounded ${comment.status === "Replied" ? "bg-brand-success bg-opacity-20 text-brand-success" : "bg-brand-warning bg-opacity-20 text-brand-warning"}`}
+                      className={`text-xs px-2 py-1 rounded ${comment.status === "Replied" ? "bg-emerald-900 text-emerald-300" : "bg-amber-900 text-amber-300"}`}
                     >
                       {comment.status}
                     </span>
                   </div>
                   {comment.status === "Open" && (
-                    <div className="mt-3 pt-3 border-t border-brand-border space-y-2">
-                      <p className="text-xs text-brand-text-secondary font-semibold">
-                        Reply Options:
+                    <div className="mt-3 pt-3 border-t border-slate-700 space-y-2">
+                      <p className="text-xs text-slate-400 font-semibold">
+                        {autoCommentEnabled ? "Auto Reply Options:" : "Reply Options:"}
                       </p>
                       <div className="flex gap-2">
-                        <button
-                          className="btn-primary text-xs px-3 py-1.5 inline-flex items-center gap-1 flex-1"
-                          onClick={() => {
-                            setComments((items) =>
-                              items.map((item) =>
-                                item.id === comment.id
-                                  ? { ...item, status: "Replied" }
-                                  : item,
-                              ),
-                            );
-                            runAction(
-                              `✅ User manually replied to @${comment.user}: "${commentReply.slice(0, 30)}..."`,
-                            );
-                          }}
-                        >
-                          <Send className="w-3 h-3" />
-                          Reply as User
-                        </button>
+                        {!autoCommentEnabled && (
+                          <button
+                            className="btn-primary text-xs px-3 py-1.5 inline-flex items-center gap-1 flex-1"
+                            onClick={() => {
+                              setComments((items) =>
+                                items.map((item) =>
+                                  item.id === comment.id
+                                    ? { ...item, status: "Replied" }
+                                    : item,
+                                ),
+                              );
+                              runAction(
+                                `✅ User manually replied to @${comment.user}: "${getReplyTemplateForPost(comment.postId).slice(0, 30)}..."`,
+                              );
+                            }}
+                          >
+                            <Send className="w-3 h-3" />
+                            Reply as User
+                          </button>
+                        )}
                         <button
                           className="btn-secondary text-xs px-3 py-1.5 inline-flex items-center gap-1 flex-1"
                           onClick={() => {
@@ -999,14 +1050,14 @@ export default function AccountsManagerPage() {
                   )}
                   {comment.status === "Replied" && (
                     <div className="mt-3 space-y-2">
-                      <div className="pt-3 border-t border-green-200 bg-green-50 rounded p-3">
+                      <div className="pt-3 border-t border-emerald-700 bg-emerald-950 rounded p-3">
                         <p className="text-xs text-green-700 font-semibold mb-1">
                           ✓ Your Reply:
                         </p>
-                        <p className="text-xs text-green-800 italic">
-                          "{commentReply}"
+                        <p className="text-xs text-emerald-200 italic">
+                          "{getReplyTemplateForPost(comment.postId)}"
                         </p>
-                        <p className="text-[10px] text-green-600 mt-1">
+                        <p className="text-[10px] text-emerald-400 mt-1">
                           ✅ Synced to Instagram post
                         </p>
                       </div>
@@ -1053,7 +1104,7 @@ export default function AccountsManagerPage() {
                                   @luminex_labs
                                 </span>
                                 <span className="text-gray-700 ml-1">
-                                  {commentReply}
+                                  {getReplyTemplateForPost(comment.postId)}
                                 </span>
                               </p>
                               <p className="text-[10px] text-gray-500 mt-0.5">
@@ -1086,19 +1137,51 @@ export default function AccountsManagerPage() {
           <div className="card-elevated border-none p-5 space-y-4">
             <div>
               <p className="text-sm font-semibold text-brand-primary flex items-center gap-2 mb-1">
-                Reply Template
+                Reply Template By Post
               </p>
               <p className="text-xs text-brand-text-secondary">
-                Customize your default reply message
+                {autoCommentEnabled
+                  ? "Automatic reply mode is active"
+                  : "Choose a post and customize its reply message"}
               </p>
             </div>
-            <textarea
-              value={commentReply}
-              onChange={(event) => setCommentReply(event.target.value)}
-              rows={4}
-              className="w-full rounded-lg border border-brand-border bg-white px-3 py-2 text-sm"
-              placeholder="Your reply message..."
-            />
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-brand-text-secondary">
+                Reply Target Post
+              </label>
+              <select
+                value={replyTargetPostId || ""}
+                onChange={(event) => setReplyTargetPostId(event.target.value)}
+                className="w-full rounded-lg border border-brand-border bg-white px-3 py-2 text-sm"
+              >
+                <option value="" disabled>
+                  Select a post
+                </option>
+                {posts.map((post) => (
+                  <option key={`reply-target-${post.id}`} value={post.id}>
+                    {post.title}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-brand-text-secondary">
+                Reply template currently editing for: {selectedReplyTargetPost?.title || "No post selected"}
+              </p>
+            </div>
+            {!autoCommentEnabled ? (
+              <textarea
+                value={getReplyTemplateForPost(replyTargetPostId)}
+                onChange={(event) =>
+                  updateReplyTemplateForPost(replyTargetPostId, event.target.value)
+                }
+                rows={4}
+                className="w-full rounded-lg border border-brand-border bg-white px-3 py-2 text-sm"
+                placeholder="Your reply message..."
+              />
+            ) : (
+              <div className="w-full rounded-lg border border-brand-border bg-slate-50 px-3 py-3 text-sm text-brand-text-secondary">
+                Manual typing is disabled while Auto Comment Reply is ON.
+              </div>
+            )}
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
               <p className="text-xs font-semibold text-blue-900">
@@ -1106,8 +1189,16 @@ export default function AccountsManagerPage() {
               </p>
               <ol className="text-xs text-blue-800 space-y-1 ml-4 list-decimal">
                 <li>New Instagram comment appears above</li>
-                <li>Click "Reply as User" to send your template</li>
-                <li>Or click "AI Reply" for intelligent auto-response</li>
+                <li>
+                  {autoCommentEnabled
+                    ? "Auto mode replies with AI automatically"
+                    : "Click \"Reply as User\" to send your template"}
+                </li>
+                <li>
+                  {autoCommentEnabled
+                    ? "Use \"AI Reply\" for a manual AI-triggered response"
+                    : "Or click \"AI Reply\" for intelligent auto-response"}
+                </li>
                 <li>Comment status changes to "Replied"</li>
                 <li>Reply appears publicly on Instagram post</li>
                 <li>Check "Live Instagram Post Preview" below</li>
@@ -1117,8 +1208,13 @@ export default function AccountsManagerPage() {
             <button
               className="btn-primary w-full text-sm inline-flex items-center justify-center gap-2"
               onClick={() => {
-                const openComment = comments.find((c) => c.status === "Open");
+                const openComment = comments.find(
+                  (comment) =>
+                    comment.postId === replyTargetPostId &&
+                    comment.status === "Open",
+                );
                 if (openComment) {
+                  setSelectedCommentPostId(replyTargetPostId);
                   setComments((items) =>
                     items.map((item) =>
                       item.id === openComment.id
@@ -1126,10 +1222,12 @@ export default function AccountsManagerPage() {
                         : item,
                     ),
                   );
-                  runAction(`Quick reply sent to @${openComment.user}`);
+                  runAction(
+                    `Quick reply sent to @${openComment.user} on ${selectedReplyTargetPost?.title || "selected post"}`,
+                  );
                 } else {
                   runAction(
-                    'No open comments to reply to. Click "Simulate New Comment" first!',
+                    'No open comments in selected post. Choose another post or click "Simulate New Comment" first!',
                   );
                 }
               }}
@@ -1168,14 +1266,35 @@ export default function AccountsManagerPage() {
                   <p className="text-sm font-semibold text-gray-900">
                     luminex_labs
                   </p>
-                  <p className="text-xs text-gray-500">Instagram Post</p>
+                  <p className="text-xs text-gray-500">
+                    {selectedCommentPost?.title || "Instagram Post"}
+                  </p>
                 </div>
                 <Instagram className="w-5 h-5 text-gray-400" />
               </div>
 
-              {/* Post Image Placeholder */}
-              <div className="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 h-48 flex items-center justify-center">
-                <ImageIcon className="w-16 h-16 text-purple-300" />
+              {/* Selected Post Media */}
+              {selectedCommentPost?.image ? (
+                <img
+                  src={selectedCommentPost.image}
+                  alt={selectedCommentPost.title}
+                  className="w-full h-48 object-cover"
+                />
+              ) : (
+                <div className="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 h-48 flex items-center justify-center">
+                  <ImageIcon className="w-16 h-16 text-purple-300" />
+                </div>
+              )}
+
+              <div className="px-3 py-2 border-b border-gray-100 bg-white">
+                <p className="text-sm font-semibold text-gray-900">
+                  {selectedCommentPost?.title || "No post selected"}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {selectedCommentPost
+                    ? `${getCommentCountForPost(selectedCommentPost.id)} comments • ${selectedCommentPost.reach} reach`
+                    : "Select a post to preview it here"}
+                </p>
               </div>
 
               {/* Post Actions */}
@@ -1188,16 +1307,24 @@ export default function AccountsManagerPage() {
               {/* Comments Section - Shows PUBLIC replies */}
               <div className="p-3 space-y-3 max-h-80 overflow-y-auto bg-gray-50">
                 <p className="text-xs font-semibold text-gray-700 mb-2">
-                  COMMENTS ({comments.length}) - Public Instagram Thread:
+                  COMMENTS ({visibleComments.length}) - {selectedCommentPost?.title || "No post selected"}:
                 </p>
 
-                {comments.map((comment) => (
+                {visibleComments.map((comment) => (
                   <div key={comment.id} className="space-y-2">
                     {/* Original User Comment */}
                     <div className="flex gap-2 items-start">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                        {comment.user.charAt(0).toUpperCase()}
-                      </div>
+                      {comment.avatar ? (
+                        <img
+                          src={comment.avatar}
+                          alt={comment.user}
+                          className="w-7 h-7 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                          {comment.user.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex-1">
                         <p className="text-sm">
                           <span className="font-semibold text-gray-900">
@@ -1232,7 +1359,7 @@ export default function AccountsManagerPage() {
                               @luminex_labs
                             </span>
                             <span className="text-gray-700 ml-1">
-                              {commentReply}
+                              {getReplyTemplateForPost(comment.postId)}
                             </span>
                           </p>
                           <div className="flex items-center gap-2 mt-1">
@@ -1929,7 +2056,7 @@ export default function AccountsManagerPage() {
                     {posts.slice(0, 5).map((post) => (
                       <div
                         key={post.id}
-                        className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-purple-50 border border-purple-200 hover:border-purple-400 transition-all hover:shadow-md"
+                        className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-purple-50 border border-purple-200 hover:border-purple-400 transition-all hover:shadow-md space-y-4"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -1946,7 +2073,7 @@ export default function AccountsManagerPage() {
                               <div className="flex items-center gap-1">
                                 <MessageSquare className="w-4 h-4 text-blue-500" />
                                 <span className="font-bold text-brand-text">
-                                  {post.comments}
+                                  {getCommentsForPost(post.id).length}
                                 </span>
                               </div>
                               <div className="flex items-center gap-1">
@@ -1957,9 +2084,61 @@ export default function AccountsManagerPage() {
                               </div>
                             </div>
                           </div>
-                          <button className="btn-secondary text-xs px-3 py-1">
-                            View Insights
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              className="btn-primary text-xs px-3 py-1"
+                              onClick={() => openCommentsForPost(post.id, post.title)}
+                            >
+                              Check Comments
+                            </button>
+                            <button className="btn-secondary text-xs px-3 py-1">
+                              View Insights
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-purple-200 bg-white/80 p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-semibold text-brand-text uppercase tracking-wide">
+                              Comment Section
+                            </p>
+                            <span className="text-[11px] text-brand-text-secondary">
+                              {getCommentsForPost(post.id).length} comments
+                            </span>
+                          </div>
+
+                          {getCommentsForPost(post.id).length === 0 ? (
+                            <p className="text-xs text-brand-text-secondary">
+                              No comments on this post yet.
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              {getCommentsForPost(post.id).map((comment) => (
+                                <div
+                                  key={`post-card-comment-${comment.id}`}
+                                  className="rounded-md bg-brand-light/40 border border-brand-border px-3 py-2"
+                                >
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="text-xs font-semibold text-brand-text">
+                                      @{comment.user}
+                                    </p>
+                                    <span
+                                      className={`text-[10px] px-2 py-0.5 rounded-full ${
+                                        comment.status === "Replied"
+                                          ? "bg-brand-success bg-opacity-20 text-brand-success"
+                                          : "bg-brand-warning bg-opacity-20 text-brand-warning"
+                                      }`}
+                                    >
+                                      {comment.status}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-brand-text-secondary mt-1">
+                                    {comment.text}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -2195,38 +2374,30 @@ export default function AccountsManagerPage() {
                 </p>
                 <Instagram className="w-4 h-4 text-blue-500" />
               </div>
-              <p className="text-3xl font-bold text-blue-900">12,430</p>
-              <p className="text-xs text-blue-600 mt-1">+234 this week</p>
+              <p className="text-3xl font-bold text-blue-900">4</p>
+              <p className="text-xs text-blue-600 mt-1">Current total</p>
             </div>
 
             <div className="card-elevated border-none p-5 bg-gradient-to-br from-purple-50 to-purple-100">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-purple-600 uppercase">
-                  Reach ({selectedDayRange} Days)
+                  Following
                 </p>
                 <BarChart3 className="w-4 h-4 text-purple-500" />
               </div>
-              <p className="text-3xl font-bold text-purple-900">
-                {selectedDayRange === 7
-                  ? "34,200"
-                  : selectedDayRange === 14
-                    ? "68,400"
-                    : "146,000"}
-              </p>
-              <p className="text-xs text-purple-600 mt-1">
-                +12% vs last period
-              </p>
+              <p className="text-3xl font-bold text-purple-900">50</p>
+              <p className="text-xs text-purple-600 mt-1">Current total</p>
             </div>
 
             <div className="card-elevated border-none p-5 bg-gradient-to-br from-pink-50 to-pink-100">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-pink-600 uppercase">
-                  Impressions
+                  Posts
                 </p>
                 <Heart className="w-4 h-4 text-pink-500" />
               </div>
-              <p className="text-3xl font-bold text-pink-900">82,000</p>
-              <p className="text-xs text-pink-600 mt-1">+8.2K today</p>
+              <p className="text-3xl font-bold text-pink-900">{posts.length}</p>
+              <p className="text-xs text-pink-600 mt-1">Published posts</p>
             </div>
 
             <div className="card-elevated border-none p-5 bg-gradient-to-br from-green-50 to-green-100">
@@ -2236,8 +2407,8 @@ export default function AccountsManagerPage() {
                 </p>
                 <Zap className="w-4 h-4 text-green-500" />
               </div>
-              <p className="text-3xl font-bold text-green-900">4.6%</p>
-              <p className="text-xs text-green-600 mt-1">Above average</p>
+              <p className="text-3xl font-bold text-green-900">2.1%</p>
+              <p className="text-xs text-green-600 mt-1">Small account baseline</p>
             </div>
 
             <div className="card-elevated border-none p-5 bg-gradient-to-br from-orange-50 to-orange-100">
@@ -2247,8 +2418,8 @@ export default function AccountsManagerPage() {
                 </p>
                 <MessageSquare className="w-4 h-4 text-orange-500" />
               </div>
-              <p className="text-3xl font-bold text-orange-900">2,340</p>
-              <p className="text-xs text-orange-600 mt-1">+340 this week</p>
+              <p className="text-3xl font-bold text-orange-900">18</p>
+              <p className="text-xs text-orange-600 mt-1">Last 7 days</p>
             </div>
           </div>
 
@@ -2311,9 +2482,9 @@ export default function AccountsManagerPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="rounded-lg bg-white border border-indigo-100 p-4">
-                <p className="text-xs text-gray-500">New Followers (Today)</p>
+                <p className="text-xs text-gray-500">Followers</p>
                 <p className="text-2xl font-bold text-indigo-700">
-                  +{Math.max(1, liveFollowersToday)}
+                  {liveFollowersToday}
                 </p>
                 <p
                   className={`text-xs mt-1 ${Number(followersChange) >= 0 ? "text-green-600" : "text-red-600"}`}
@@ -2325,7 +2496,7 @@ export default function AccountsManagerPage() {
               <div className="rounded-lg bg-white border border-indigo-100 p-4">
                 <p className="text-xs text-gray-500">Comments Received</p>
                 <p className="text-2xl font-bold text-indigo-700">
-                  {Math.max(1, liveCommentsReceived)}
+                  {liveCommentsReceived}
                 </p>
                 <p
                   className={`text-xs mt-1 ${Number(commentsChange) >= 0 ? "text-green-600" : "text-red-600"}`}
@@ -2396,25 +2567,25 @@ export default function AccountsManagerPage() {
                 {[
                   {
                     day: "Week 1",
-                    followers: 11420,
+                    followers: 1,
                     color: "bg-blue-500",
-                    width: "70%",
+                    width: "25%",
                   },
                   {
                     day: "Week 2",
-                    followers: 11680,
+                    followers: 2,
                     color: "bg-blue-600",
-                    width: "75%",
+                    width: "50%",
                   },
                   {
                     day: "Week 3",
-                    followers: 12010,
+                    followers: 3,
                     color: "bg-blue-700",
-                    width: "85%",
+                    width: "75%",
                   },
                   {
                     day: "Week 4",
-                    followers: 12430,
+                    followers: 4,
                     color: "bg-blue-800",
                     width: "100%",
                   },
@@ -2448,52 +2619,52 @@ export default function AccountsManagerPage() {
                 {[
                   {
                     day: "Mon",
-                    likes: 1240,
-                    comments: 89,
+                    likes: 4,
+                    comments: 1,
                     color: "bg-pink-500",
-                    width: "85%",
+                    width: "44%",
                   },
                   {
                     day: "Tue",
-                    likes: 980,
-                    comments: 65,
+                    likes: 3,
+                    comments: 1,
                     color: "bg-pink-600",
-                    width: "68%",
+                    width: "33%",
                   },
                   {
                     day: "Wed",
-                    likes: 1580,
-                    comments: 124,
+                    likes: 5,
+                    comments: 1,
                     color: "bg-pink-700",
-                    width: "100%",
+                    width: "56%",
                   },
                   {
                     day: "Thu",
-                    likes: 1320,
-                    comments: 98,
+                    likes: 6,
+                    comments: 2,
                     color: "bg-pink-800",
-                    width: "90%",
+                    width: "67%",
                   },
                   {
                     day: "Fri",
-                    likes: 1880,
-                    comments: 156,
+                    likes: 7,
+                    comments: 2,
                     color: "bg-pink-900",
-                    width: "100%",
+                    width: "78%",
                   },
                   {
                     day: "Sat",
-                    likes: 2340,
-                    comments: 198,
+                    likes: 9,
+                    comments: 3,
                     color: "bg-pink-600",
                     width: "100%",
                   },
                   {
                     day: "Sun",
-                    likes: 2010,
-                    comments: 167,
+                    likes: 8,
+                    comments: 2,
                     color: "bg-pink-700",
-                    width: "95%",
+                    width: "89%",
                   },
                 ].map((item, idx) => (
                   <div key={idx}>
@@ -2523,31 +2694,15 @@ export default function AccountsManagerPage() {
               <ImageIcon className="w-5 h-5 text-brand-primary" />
               Top Performing Posts
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {[
                 {
-                  title: "Summer Campaign",
-                  likes: 1240,
-                  comments: 93,
-                  reach: "12,000",
-                  saves: 210,
-                  engagement: "8.2%",
-                },
-                {
-                  title: "Product Launch",
-                  likes: 2340,
-                  comments: 187,
-                  reach: "23,500",
-                  saves: 456,
-                  engagement: "10.5%",
-                },
-                {
-                  title: "Customer Testimonial",
-                  likes: 890,
-                  comments: 54,
-                  reach: "8,900",
-                  saves: 123,
-                  engagement: "6.8%",
+                  title: "Welcome to Luminex Labs",
+                  likes: 6,
+                  comments: 2,
+                  reach: "54",
+                  saves: 1,
+                  engagement: "14.8%",
                 },
               ].map((post, idx) => (
                 <div
@@ -2598,29 +2753,29 @@ export default function AccountsManagerPage() {
                 <p className="text-xs font-semibold text-purple-600 mb-2">
                   TOTAL STORIES
                 </p>
-                <p className="text-3xl font-bold text-purple-900">24</p>
-                <p className="text-xs text-purple-600 mt-1">Published</p>
+                <p className="text-3xl font-bold text-purple-900">1</p>
+                <p className="text-xs text-purple-600 mt-1">Published this week</p>
               </div>
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
                 <p className="text-xs font-semibold text-blue-600 mb-2">
                   STORY VIEWS
                 </p>
-                <p className="text-3xl font-bold text-blue-900">18,240</p>
-                <p className="text-xs text-blue-600 mt-1">Avg 760/story</p>
+                <p className="text-3xl font-bold text-blue-900">42</p>
+                <p className="text-xs text-blue-600 mt-1">Avg 42/story</p>
               </div>
               <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-4 border border-pink-200">
                 <p className="text-xs font-semibold text-pink-600 mb-2">
                   REPLIES
                 </p>
-                <p className="text-3xl font-bold text-pink-900">1,240</p>
-                <p className="text-xs text-pink-600 mt-1">6.8% reply rate</p>
+                <p className="text-3xl font-bold text-pink-900">3</p>
+                <p className="text-xs text-pink-600 mt-1">7.1% reply rate</p>
               </div>
               <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
                 <p className="text-xs font-semibold text-green-600 mb-2">
                   LINK CLICKS
                 </p>
-                <p className="text-3xl font-bold text-green-900">3,420</p>
-                <p className="text-xs text-green-600 mt-1">18.7% CTR</p>
+                <p className="text-3xl font-bold text-green-900">5</p>
+                <p className="text-xs text-green-600 mt-1">11.9% CTR</p>
               </div>
             </div>
           </div>
@@ -2634,40 +2789,16 @@ export default function AccountsManagerPage() {
             <div className="space-y-4">
               {[
                 {
-                  post: "Summer Campaign",
-                  image: "🏖️",
-                  likes: 1240,
-                  comments: 93,
-                  reach: 12000,
-                  saves: 210,
-                  shares: 45,
-                  impressions: 15400,
-                  engagement: "8.2%",
-                  date: "2 days ago",
-                },
-                {
-                  post: "Product Launch Video",
-                  image: "🎬",
-                  likes: 2340,
-                  comments: 187,
-                  reach: 23500,
-                  saves: 456,
-                  shares: 89,
-                  impressions: 28900,
-                  engagement: "10.5%",
-                  date: "5 days ago",
-                },
-                {
-                  post: "Behind The Scenes",
-                  image: "📸",
-                  likes: 1580,
-                  comments: 124,
-                  reach: 16800,
-                  saves: 298,
-                  shares: 67,
-                  impressions: 19200,
-                  engagement: "9.1%",
-                  date: "1 week ago",
+                  post: "Welcome to Luminex Labs",
+                  image: "🚀",
+                  likes: 6,
+                  comments: 2,
+                  reach: 54,
+                  saves: 1,
+                  shares: 1,
+                  impressions: 61,
+                  engagement: "14.8%",
+                  date: "This week",
                 },
               ].map((post, idx) => (
                 <div

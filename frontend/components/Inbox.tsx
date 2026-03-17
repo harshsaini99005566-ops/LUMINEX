@@ -96,7 +96,7 @@ const Inbox: React.FC<InboxProps> = ({ onLogout }) => {
   const _currentAccount = accounts.find((a) => a._id === selectedAccountId);
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-white dark:bg-slate-900">
+    <div className="h-full w-full flex flex-col bg-white dark:bg-slate-900 overflow-hidden">
       {/* Top Navigation */}
       <nav className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">

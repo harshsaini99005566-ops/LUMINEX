@@ -2,7 +2,14 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { LogOut, LayoutDashboard, Zap, MessageCircle, Settings, FlaskConical, ChevronDown as _ChevronDown } from 'lucide-react' 
+import {
+  LogOut,
+  LayoutDashboard,
+  Zap,
+  MessageCircle,
+  Settings,
+  FlaskConical,
+} from 'lucide-react'
 import AuthGuard from '../../components/AuthGuard'
 import { useState, useEffect } from 'react'
 
@@ -26,7 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/dashboard/dm-reply', label: 'Inbox', icon: MessageCircle },
+    { href: '/dashboard/inbox', label: 'Inbox', icon: MessageCircle },
     { href: '/dashboard/rules', label: 'Automations', icon: Zap },
     { href: '/dashboard/accounts-manager', label: 'Account Manager', icon: FlaskConical },
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
@@ -41,11 +48,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link href="/dashboard">
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">L</span>
+                  <span className="text-white font-bold text-lg">A</span>
                 </div>
                 <div>
                   <h1 className="text-lg font-heading font-bold text-brand-text">
-                    LUMINEX
+                    AutoDM
                   </h1>
                   <p className="text-xs text-brand-muted">Pro</p>
                 </div>
