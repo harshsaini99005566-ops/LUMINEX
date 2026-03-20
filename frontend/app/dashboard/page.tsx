@@ -33,55 +33,18 @@ interface User {
 }
 
 export default function Dashboard() {
-  const searchParams = useSearchParams();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [fbAuthSuccess, setFbAuthSuccess] = useState(false);
-
-  useEffect(() => {
-    // Check for Facebook OAuth callback
-    const fbauth = searchParams.get("fbauth");
-    const token = searchParams.get("token");
-    const fbUser = searchParams.get("user");
-
-    if (fbauth === "success" && token) {
-      // Store token from Facebook OAuth
-      localStorage.setItem("token", token);
-      setFbAuthSuccess(true);
-
-      // Clear URL params
-      window.history.replaceState({}, "", "/dashboard");
-
-      console.log(`✅ Facebook login successful! Welcome ${fbUser || "User"}`);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
-
-    const fetchUser = async () => {
-      try {
-        const data = await authAPI.me();
-        if (data && data.user) {
-          setUser(data.user);
-        } else {
-          throw new Error("Failed to fetch user data");
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        window.location.href = "/login";
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, [fbAuthSuccess]); // Re-fetch user when FB auth completes
+  // Authentication checks removed for unrestricted dashboard access
+  const [user] = useState<User | null>({
+    id: 'demo',
+    firstName: 'Demo',
+    lastName: 'User',
+    email: 'demo@example.com',
+    plan: 'pro',
+    usage: { messagesThisMonth: 0, rulesUsed: 0, aiRepliesUsed: 0 },
+    limits: { automationRules: 10, aiReplies: 100 },
+    trialEndsAt: undefined,
+  });
+  const [loading] = useState(false);
 
   if (loading) {
     return (

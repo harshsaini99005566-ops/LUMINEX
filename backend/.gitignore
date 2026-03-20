@@ -1,11 +1,4 @@
-# Backend .gitignore
-node_modules
-npm-debug.log
+# Luminex Backend .gitignore
+node_modules/
 .env
-.env.local
-.vscode
-.idea
-*.swp
-.DS_Store
 logs/
-*.log

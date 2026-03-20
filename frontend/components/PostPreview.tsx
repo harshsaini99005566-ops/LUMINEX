@@ -164,10 +164,7 @@ export default function PostPreview({
         </div>
       )}
 
-      {/* Timestamp preview */}
-      <div className="px-3 py-2 bg-cyber-dark">
-        <p className="text-xs text-gray-500">Preview - post will appear like this on Instagram</p>
-      </div>
+      {/* Timestamp preview removed as requested */}
     </motion.div>
   );
 }

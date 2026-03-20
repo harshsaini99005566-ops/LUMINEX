@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import * as React from 'react'
 import Link from 'next/link'
 import {
   LogOut,
@@ -18,17 +18,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [currentPath, setCurrentPath] = useState('')
 
   useEffect(() => {
-    const userStr = localStorage.getItem('user')
-    if (userStr) {
-      setUser(JSON.parse(userStr))
-    }
+    setUser({ firstName: 'Demo' });
     setCurrentPath(window.location.pathname)
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    window.location.href = '/login'
+    // No-op: logout disabled for unrestricted access
   }
 
   const navItems = [
@@ -40,8 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ]
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen flex bg-brand-light">
+    <div className="min-h-screen flex bg-brand-light">
         {/* Sidebar */}
         <aside className="w-64 bg-white border-r border-brand-border flex flex-col shadow-sm">
           <div className="p-6 border-b border-brand-border">
@@ -131,6 +125,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </main>
       </div>
-    </AuthGuard>
-  )
+    )
 }

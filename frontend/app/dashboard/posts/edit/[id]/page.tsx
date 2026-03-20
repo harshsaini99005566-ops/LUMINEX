@@ -12,20 +12,37 @@ export default function EditPostPage() {
   const router = useRouter();
   const postId = params.id as string;
 
+  // State declarations to fix errors
   const [post, setPost] = useState<ScheduledPost | null>(null);
   const [accounts, setAccounts] = useState<InstagramAccount[]>([]);
-  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [uploadedFiles, setUploadedFiles] = useState<MediaFile[]>([]);
-  const [caption, setCaption] = useState('');
+  const [caption, setCaption] = useState<string>('');
   const [hashtags, setHashtags] = useState<string[]>([]);
-  const [hashtagInput, setHashtagInput] = useState('');
+  const [hashtagInput, setHashtagInput] = useState<string>('');
   const [location, setLocation] = useState<LocationResult | null>(null);
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [error, setError] = useState('');
+  const [scheduledDate, setScheduledDate] = useState<string>('');
+  const [scheduledTime, setScheduledTime] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [publishing, setPublishing] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  // Mock previous posts and comments data for display
+  const previousPosts = [
+    { id: "p1", title: "Demo Post 1", likes: 0, comments: 2, reach: "0", image: "/posts/333.png" },
+    { id: "p2", title: "Demo Post 2", likes: 0, comments: 3, reach: "0", image: "/posts/444.jpg" },
+    { id: "p3", title: "Demo Post 3", likes: 0, comments: 2, reach: "0", image: "/posts/555.jpg" },
+  ];
+  const previousComments = [
+    { id: "c1", user: "harsh_956", avatar: "/profiles/harsh_956.png", text: "Love this launch post. Excited to see more.", postId: "p1", time: "2m ago", status: "Open" },
+    { id: "c2", user: "nita_rathore_527", avatar: "C:/Users/DELL/OneDrive/Desktop 111/nita_rathore_527.jpg", text: "Clean start. Looking forward to your next update!", postId: "p1", time: "14m ago", status: "Replied" },
+    { id: "c3", user: "vexora_labs", text: "This setup looks clean. What tools are you using?", postId: "p2", time: "31m ago", status: "Open" },
+    { id: "c4", user: "vexora_labs", text: "Impressed by the automation features!", postId: "p2", time: "just now", status: "Open" },
+    { id: "c7", user: "vexora_labs", text: "How do you handle scaling for multiple accounts?", postId: "p2", time: "moments ago", status: "Open" },
+    { id: "c5", user: "vexora_labs", text: "Congrats on the milestone post!", postId: "p3", time: "1h ago", status: "Open" },
+    { id: "c6", user: "vexora_labs", text: "Small account but strong start. Keep going!", postId: "p3", time: "1h ago", status: "Replied" },
+  ];
+  // ...existing code...
 
   // Fetch post data
   useEffect(() => {
