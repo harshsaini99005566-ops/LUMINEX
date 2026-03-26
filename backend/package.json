@@ -1,18 +1,19 @@
 {
   "name": "luminex-backend",
   "version": "1.0.0",
-  "description": "Backend for Luminex Automation - clean, low-complexity, and well-structured.",
-  "main": "src/index.js",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "dotenv": "^16.0.3",
-    "cors": "^2.8.5"
+    "dotenv": "^17.2.3",
+    "mongoose": "^8.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "bullmq": "^4.12.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "nodemon": "^3.1.0"
   }
 }

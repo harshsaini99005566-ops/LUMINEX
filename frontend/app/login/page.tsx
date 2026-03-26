@@ -27,60 +27,28 @@ function LoginContent() {
     }
   }, [searchParams])
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    
-    // Clear any old tokens before attempting login
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    
+  // Email login handler
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     try {
-      const data = await authAPI.login(email, password)
-
-      if (data && data.token) {
-        // Store token locally for compatibility with non-cookie flows
-        localStorage.setItem('token', data.token)
-        if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user))
-        }
-
-        // Use SPA navigation to avoid remount loops
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 300)
-      } else {
-        const errorMessage = typeof data.error === 'string' ? data.error : 'Login failed'
-        setError(errorMessage)
-      }
-    } catch (error: any) {
-      // Clear tokens on login failure to prevent "invalid token" errors
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      
-      // Extract error message from axios error response
-      let errorMessage = ''
-      
-      if (error.response?.data?.error) {
-        // Backend returned an error message
-        errorMessage = error.response.data.error
-        
-        // Provide helpful hints for common errors
-        if (errorMessage === 'Invalid credentials') {
-          errorMessage = 'Invalid email or password. Please check your credentials and try again.'
-        }
-      } else if (error.message) {
-        errorMessage = error.message
-      } else {
-        errorMessage = `Network error. Ensure backend is running at ${process.env.NEXT_PUBLIC_API_URL} and CORS allows requests from this origin.`
-      }
-      
-      setError(errorMessage)
+      const res = await authAPI.emailLogin(email, password);
+      console.log(res.data);
+      // redirect after login
+      window.location.href = "/dashboard";
+    } catch (err: any) {
+      console.log(err);
+      setError(
+        err?.response?.data?.error ||
+        'Login failed'
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-brand-light flex items-center justify-center px-6 py-12 relative overflow-hidden">
@@ -102,7 +70,7 @@ function LoginContent() {
         </div>
 
         <div className="card-elevated shadow-lg border-none">
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleEmailLogin} className="space-y-6">
             {error && (
               <div className="flex gap-3 p-4 bg-brand-error-50 border border-brand-error-light rounded-lg animate-slideDown">
                 <AlertCircle className="w-5 h-5 text-brand-error flex-shrink-0 mt-0.5" />
@@ -187,10 +155,7 @@ function LoginContent() {
           <div className="mt-6 flex flex-col gap-3">
             <button
               type="button"
-              onClick={() => {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-                window.location.href = `${apiUrl}/api/auth/facebook`;
-              }}
+              onClick={() => authAPI.facebookLogin()}
               className="btn-secondary w-full text-base font-semibold py-3 flex items-center justify-center gap-2 hover:shadow-md transition-all"
             >
               <svg width="20" height="20" fill="currentColor" className="text-blue-600" viewBox="0 0 24 24"><path d="M22.675 0h-21.35C.595 0 0 .592 0 1.326v21.348C0 23.408.595 24 1.325 24h11.495v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.797.143v3.24l-1.918.001c-1.504 0-1.797.715-1.797 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116C23.406 24 24 23.408 24 22.674V1.326C24 .592 23.406 0 22.675 0"/></svg>

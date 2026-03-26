@@ -1,28 +1,34 @@
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '../lib/store';
-import { authAPI } from '../lib/api';
-import { User, ApiResponse } from '../types';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "../lib/store";
+import { authAPI } from "../lib/api";
+import { User, ApiResponse } from "../types";
 
 export function useAuth() {
   const router = useRouter();
-  const { user, token, isAuthenticated, login, logout, updateUser, setLoading, isLoading } =
-    useAuthStore();
+  const {
+    user,
+    token,
+    isAuthenticated,
+    login,
+    logout,
+    updateUser,
+    setLoading,
+    isLoading,
+  } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async (email: string, password: string) => {
     setError(null);
     setLoading(true);
     try {
-      const response: ApiResponse<{ user: User; token: string }> = await authAPI.login(
-        email,
-        password
-      );
+      const response: ApiResponse<{ user: User; token: string }> =
+        await authAPI.login(email, password);
       login(response.data.user, response.data.token);
-      router.push('/dashboard');
+      router.push("/dashboard");
       return response;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Login failed';
+      const errorMessage = err.response?.data?.message || "Login failed";
       setError(errorMessage);
       throw err;
     } finally {
@@ -34,22 +40,18 @@ export function useAuth() {
     email: string,
     password: string,
     firstName: string,
-    lastName: string
+    lastName: string,
   ) => {
     setError(null);
     setLoading(true);
     try {
-      const response: ApiResponse<{ user: User; token: string }> = await authAPI.register(
-        email,
-        password,
-        firstName,
-        lastName
-      );
+      const response: ApiResponse<{ user: User; token: string }> =
+        await authAPI.register(email, password, firstName, lastName);
       login(response.data.user, response.data.token);
-      router.push('/dashboard');
+      router.push("/dashboard");
       return response;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Registration failed';
+      const errorMessage = err.response?.data?.message || "Registration failed";
       setError(errorMessage);
       throw err;
     } finally {
@@ -62,10 +64,10 @@ export function useAuth() {
     try {
       await authAPI.logout();
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error("Logout error:", err);
     } finally {
       logout();
-      router.push('/login');
+      router.push("/login");
       setLoading(false);
     }
   };
@@ -78,7 +80,7 @@ export function useAuth() {
       updateUser(response.data);
       return response;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Update failed';
+      const errorMessage = err.response?.data?.message || "Update failed";
       setError(errorMessage);
       throw err;
     } finally {
@@ -93,7 +95,7 @@ export function useAuth() {
       const response = await authAPI.resetPassword(email);
       return response;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Reset failed';
+      const errorMessage = err.response?.data?.message || "Reset failed";
       setError(errorMessage);
       throw err;
     } finally {
@@ -106,10 +108,11 @@ export function useAuth() {
     setLoading(true);
     try {
       const response = await authAPI.confirmReset(token, password);
-      router.push('/login');
+      router.push("/login");
       return response;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Reset confirmation failed';
+      const errorMessage =
+        err.response?.data?.message || "Reset confirmation failed";
       setError(errorMessage);
       throw err;
     } finally {
